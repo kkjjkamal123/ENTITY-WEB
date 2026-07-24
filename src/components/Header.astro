@@ -1,0 +1,75 @@
+---
+import { withBase } from "../lib/url";
+import ThemeToggle from "./ThemeToggle.astro";
+
+interface Props {
+  path: string;
+}
+const { path } = Astro.props;
+
+const nav = [
+  ["/", "Overview"],
+  ["/optimizations/", "Optimizations"],
+  ["/evidence/", "Evidence"],
+  ["/leaderboard/", "Leaderboard"],
+  ["/apps/", "Apps"],
+  ["/journey/", "Journey"],
+  ["/docs/", "Docs"],
+] as const;
+---
+
+<header class="sticky top-0 z-50 border-b border-outline bg-bg/95 backdrop-blur-sm">
+  <div class="mx-auto max-w-[1200px] px-4 md:px-6">
+    <div class="flex h-14 items-center justify-between gap-4">
+      <a href={withBase("/")} class="flex items-center gap-2 no-underline shrink-0" aria-label="ENTITY home">
+        <span class="text-base font-bold tracking-[0.3em]">ENTITY</span>
+      </a>
+      <nav aria-label="Main" class="hidden lg:block">
+        <ul class="flex items-center gap-1">
+          {
+            nav.map(([href, label]) => (
+              <li>
+                <a
+                  href={withBase(href)}
+                  aria-current={path === href ? "page" : undefined}
+                  class:list={[
+                    "no-underline rounded-md px-3 py-1.5 text-[0.8125rem] transition-colors duration-150",
+                    path === href
+                      ? "bg-fill text-onfill font-medium"
+                      : "text-dim hover:text-fg",
+                  ]}
+                >
+                  {label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+      <div class="flex items-center gap-2 shrink-0">
+        <ThemeToggle />
+        <a href={withBase("/apps/#download")} class="btn btn-solid !py-1.5 !px-3 text-[0.75rem]">Download</a>
+      </div>
+    </div>
+    <nav aria-label="Main pages" class="lg:hidden -mx-4 px-4 pb-2 scroll-x">
+      <ul class="flex items-center gap-1 w-max">
+        {
+          nav.map(([href, label]) => (
+            <li>
+              <a
+                href={withBase(href)}
+                aria-current={path === href ? "page" : undefined}
+                class:list={[
+                  "no-underline rounded-md px-2.5 py-1 text-[0.75rem] whitespace-nowrap transition-colors duration-150",
+                  path === href ? "bg-fill text-onfill font-medium" : "text-dim",
+                ]}
+              >
+                {label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>

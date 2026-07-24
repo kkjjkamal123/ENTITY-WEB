@@ -1,0 +1,196 @@
+---
+/*
+  A5 - Adaptive context sizing.
+  The context window is derived, not assumed. The selection function is the
+  shipped code (MainActivity.adaptiveContext, OPTIMIZATIONS.md section 0):
+    M < 1.6 GB:  F > 3.0 GiB -> 8192, else 4096
+    M >= 1.6 GB: F > 2.2 GiB -> 4096, else 2048
+  Default state anchors to the shipped screenshot: Llama-3.2-1B-Q4_0, 773 MB,
+  trained context 131072, running context 4096 (auto-fit to free RAM), 1.2 GB
+  free. The KV-bar proportions are schematic; the snapping is the real rule.
+*/
+import Fig from "../Fig.astro";
+---
+
+<Fig
+  id="a5"
+  title="A5 - Adaptive context sizing"
+  shows="Drag model size and free RAM: the running context snaps between 2048 / 4096 / 8192 by the shipped rule, keeping the KV cache under the memory ceiling - and a fixed 8192 window shows the failure it prevents."
+  data="measured"
+  dataNote="Selection function: the shipped adaptiveContext() code, docs/OPTIMIZATIONS.md section 0. Anchor state: the model-info screenshot (773 MB model, trained context 131072, running context 4096 auto-fit, 1.2 GB free). Bar proportions are schematic."
+  controls={false}
+>
+  <div id="a5-root">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+      <label class="block text-[0.75rem]">
+        <span class="flex justify-between"
+          ><span>Model file size</span><output id="a5-m-out" class="font-bold">0.77 GB</output></span
+        >
+        <input
+          id="a5-m"
+          type="range"
+          min="0.4"
+          max="3.4"
+          step="0.01"
+          value="0.77"
+          class="w-full accent-[var(--fill)] mt-1"
+          aria-label="Model file size in gigabytes"
+        />
+      </label>
+      <label class="block text-[0.75rem]">
+        <span class="flex justify-between"
+          ><span>Free RAM</span><output id="a5-f-out" class="font-bold">1.2 GiB</output></span
+        >
+        <input
+          id="a5-f"
+          type="range"
+          min="0.6"
+          max="5"
+          step="0.1"
+          value="1.2"
+          class="w-full accent-[var(--fill)] mt-1"
+          aria-label="Free RAM in gibibytes"
+        />
+      </label>
+    </div>
+
+    <div class="mt-5 grid grid-cols-3 gap-2 max-w-[22rem]" role="group" aria-label="Selected context window">
+      {
+        [2048, 4096, 8192].map((c) => (
+          <span class="a5-ctx chip justify-center !rounded-[8px] !py-1.5" data-ctx={c} data-on={c === 4096 || undefined}>
+            {c}
+          </span>
+        ))
+      }
+    </div>
+
+    <div class="mt-5 space-y-3 max-w-[36rem]">
+      <div>
+        <p class="flex justify-between text-[0.6875rem] text-dim">
+          <span>Auto: KV cache at the derived window</span>
+          <span id="a5-auto-note" class="t-ok">fits under the ceiling</span>
+        </p>
+        <div class="relative h-4 mt-1 rounded-[4px] border border-outline bg-surface">
+          <div id="a5-bar-auto" class="absolute inset-y-0 left-0 rounded-[3px] bg-fill" style="width:33%"></div>
+          <div id="a5-ceiling" class="absolute -inset-y-1 w-[2px] bg-danger" style="left:66%" title="free-RAM ceiling"></div>
+        </div>
+      </div>
+      <div>
+        <p class="flex justify-between text-[0.6875rem] text-dim">
+          <span>Fixed 8192 window (what a hardcoded default would do)</span>
+          <span id="a5-fixed-note">-</span>
+        </p>
+        <div class="relative h-4 mt-1 rounded-[4px] border border-outline bg-surface">
+          <div id="a5-bar-fixed" class="absolute inset-y-0 left-0 rounded-[3px]" style="width:80%; background: var(--arm-2)"></div>
+          <div id="a5-ceiling2" class="absolute -inset-y-1 w-[2px] bg-danger" style="left:66%"></div>
+        </div>
+      </div>
+      <p class="text-[0.6875rem] text-dim">
+        red line = free-RAM ceiling. Weights are memory-mapped and paged on demand, so the KV
+        cache - sized by this rule - is the actual RAM-pressure lever.
+      </p>
+    </div>
+
+    <p id="a5-anchor" class="mt-4 text-[0.75rem] text-dim">
+      Anchor: Llama-3.2-1B-Instruct-Q4_0, 773 MB, trained context 131,072 &rarr; running context
+      <span class="text-fg font-medium">4096 (auto-fit to free RAM)</span> at 1.2 GB free - the
+      shipped model-info card's exact state.
+    </p>
+  </div>
+
+  <p slot="caption">
+    In Auto mode only; manual mode uses the user's chosen context verbatim. The smaller window is
+    an admission decision: it cuts KV-cache demand before a 3B-class model exhausts the remaining
+    memory, which is what lets one run inside about 2 GB free.
+  </p>
+</Fig>
+
+<style>
+  .a5-ctx[data-on] {
+    background: var(--fill);
+    color: var(--on-fill);
+    border-color: var(--fill);
+    font-weight: 700;
+  }
+  #a5-bar-auto,
+  #a5-bar-fixed,
+  #a5-ceiling,
+  #a5-ceiling2 {
+    transition: width 240ms cubic-bezier(0.2, 0, 0, 1), left 240ms cubic-bezier(0.2, 0, 0, 1),
+      background-color 240ms;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #a5-bar-auto,
+    #a5-bar-fixed,
+    #a5-ceiling,
+    #a5-ceiling2 {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const root = document.getElementById("a5-root");
+  if (root) {
+    const m = document.getElementById("a5-m") as HTMLInputElement;
+    const f = document.getElementById("a5-f") as HTMLInputElement;
+    const mOut = document.getElementById("a5-m-out")!;
+    const fOut = document.getElementById("a5-f-out")!;
+    const ctxChips = [...root.querySelectorAll<HTMLElement>(".a5-ctx")];
+    const barAuto = document.getElementById("a5-bar-auto")!;
+    const barFixed = document.getElementById("a5-bar-fixed")!;
+    const ceil1 = document.getElementById("a5-ceiling")!;
+    const ceil2 = document.getElementById("a5-ceiling2")!;
+    const autoNote = document.getElementById("a5-auto-note")!;
+    const fixedNote = document.getElementById("a5-fixed-note")!;
+    const anchor = document.getElementById("a5-anchor")!;
+
+    // the shipped rule, verbatim (adaptiveContext in MainActivity.kt)
+    const adaptiveContext = (sizeGb: number, freeGb: number): number =>
+      sizeGb < 1.6 ? (freeGb > 3.0 ? 8192 : 4096) : freeGb > 2.2 ? 4096 : 2048;
+
+    /*
+      Schematic bar scale: the axis spans 0..5 "GiB-equivalents". The ceiling
+      sits at the free-RAM value; the KV bar's length is proportional to the
+      window (8192 = 2.4 units at 3B scale - illustrative, labelled schematic).
+    */
+    const AXIS = 5.2;
+    const kvUnits = (ctx: number, sizeGb: number) =>
+      (ctx / 8192) * (sizeGb < 1.6 ? 1.6 : 2.6);
+
+    const update = () => {
+      const M = parseFloat(m.value);
+      const F = parseFloat(f.value);
+      mOut.textContent = `${M.toFixed(2)} GB`;
+      fOut.textContent = `${F.toFixed(1)} GiB`;
+      const ctx = adaptiveContext(M, F);
+      ctxChips.forEach((c) => c.toggleAttribute("data-on", Number(c.dataset.ctx) === ctx));
+
+      const ceilPct = Math.min((F / AXIS) * 100, 98);
+      ceil1.style.left = `${ceilPct}%`;
+      ceil2.style.left = `${ceilPct}%`;
+
+      const autoPct = Math.min((kvUnits(ctx, M) / AXIS) * 100, 98);
+      barAuto.style.width = `${autoPct}%`;
+      const fits = autoPct <= ceilPct;
+      barAuto.style.background = fits ? "var(--fill)" : "var(--danger)";
+      autoNote.textContent = fits ? "fits under the ceiling" : "over - load would fail";
+      autoNote.className = fits ? "t-ok" : "t-danger";
+
+      const fixedPct = Math.min((kvUnits(8192, M) / AXIS) * 100, 98);
+      barFixed.style.width = `${fixedPct}%`;
+      const fixedFits = fixedPct <= ceilPct;
+      barFixed.style.background = fixedFits ? "var(--arm-2)" : "var(--danger)";
+      fixedNote.textContent = fixedFits
+        ? "would fit here"
+        : "crosses the ceiling - the load this rule prevents";
+      fixedNote.className = fixedFits ? "text-dim" : "t-danger";
+
+      anchor.hidden = !(Math.abs(M - 0.77) < 0.02 && Math.abs(F - 1.2) < 0.05);
+    };
+
+    m.addEventListener("input", update);
+    f.addEventListener("input", update);
+    update();
+  }
+</script>

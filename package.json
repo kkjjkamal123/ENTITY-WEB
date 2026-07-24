@@ -1,0 +1,25 @@
+{
+  "name": "entity-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "refresh:leaderboard": "node scripts/refresh-leaderboard.mjs",
+    "build:changelog": "node scripts/build-changelog.mjs",
+    "build:images": "node scripts/process-images.mjs",
+    "build:og": "node scripts/og-images.mjs"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.2.1",
+    "@tailwindcss/vite": "^4.1.4",
+    "astro": "^5.7.4",
+    "tailwindcss": "^4.1.4"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1",
+    "sharp": "^0.34.1"
+  }
+}

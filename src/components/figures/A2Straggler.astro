@@ -1,0 +1,358 @@
+---
+/*
+  A2 - Why eight threads is slower than four.
+  One decode step, naive vs tuned. In the naive phase every core gets an equal
+  chunk; the fast cores finish early and idle at the barrier until the slowest
+  LITTLE core lands. In the tuned phase the derived thread count runs on the
+  fast cores only and the step completes sooner.
+
+  Envelope (step duration per phase) is MEASURED: 1 / decode_tok_s of the
+  naive and threads-only arms of a real contributed run. The interior split
+  (per-core chunk speed) is SCHEMATIC: equal chunks, speed proportional to the
+  kernel's reported cpu_capacity where present, else max clock.
+*/
+import Fig from "../Fig.astro";
+
+interface Preset {
+  key: string;
+  device: string;
+  soc: string;
+  freqs: number[]; // per-core MHz, ascending clusters as reported
+  caps: number[] | null;
+  fastCores: number;
+  naiveRate: number;
+  tunedRate: number;
+  tunedThreads: number;
+  runsPerArm: number;
+  source: string;
+}
+
+const presets: Preset[] = [
+  {
+    key: "a015",
+    device: "Nothing A015",
+    soc: "Dimensity 7300 - flat 4+4",
+    freqs: [2000, 2000, 2000, 2000, 2500, 2500, 2500, 2500],
+    caps: [228, 228, 228, 228, 1024, 1024, 1024, 1024],
+    fastCores: 4,
+    naiveRate: 10.4,
+    tunedRate: 18.1,
+    tunedThreads: 4,
+    runsPerArm: 1,
+    source: "contributed run, 2026-07-23 (single pass, provisional)",
+  },
+  {
+    key: "g5",
+    device: "Pixel 10",
+    soc: "Tensor G5 - 2+5+1 with a prime core",
+    freqs: [2246, 2246, 3052, 3052, 3052, 3052, 3052, 3782],
+    caps: null,
+    fastCores: 6,
+    naiveRate: 7.43,
+    tunedRate: 21.5,
+    tunedThreads: 2,
+    runsPerArm: 3,
+    source: "contributed run, 3 passes per arm, 2026-07-22",
+  },
+  {
+    key: "s22u",
+    device: "Galaxy S22 Ultra",
+    soc: "Snapdragon 8 Gen 1 - 4+3+1 with a prime core",
+    freqs: [1785, 1785, 1785, 1785, 2496, 2496, 2496, 2995],
+    caps: null,
+    fastCores: 4,
+    naiveRate: 5.08,
+    tunedRate: 18.2,
+    tunedThreads: 2,
+    runsPerArm: 3,
+    source: "contributed run, 3 passes per arm, 2026-07-23",
+  },
+];
+
+interface Row {
+  ghz: string;
+  fast: boolean;
+  used1: boolean;
+  t1: number; // chunk ms in naive phase
+  idleFrom: number | null;
+  used2: boolean;
+  t2: number | null; // chunk ms in tuned phase
+}
+
+function compute(p: Preset) {
+  const n = p.freqs.length;
+  const w = p.freqs.map((f, i) => (p.caps ? p.caps[i] : f));
+  const wMax = Math.max(...w);
+  const norm = w.map((x) => x / wMax);
+  const naiveStep = 1000 / p.naiveRate;
+  const tunedStep = 1000 / p.tunedRate;
+
+  const raw1 = norm.map((x) => 1 / 8 / x);
+  const s1 = naiveStep / Math.max(...raw1);
+
+  // tuned: T threads on the T fastest cores
+  const order = [...Array(n).keys()].sort((a, b) => norm[b] - norm[a]);
+  const used2 = new Set(order.slice(0, p.tunedThreads));
+  const raw2 = norm.map((x) => 1 / p.tunedThreads / x);
+  const s2 = tunedStep / Math.max(...[...used2].map((i) => raw2[i]));
+
+  const rows: Row[] = p.freqs.map((f, i) => {
+    const t1 = raw1[i] * s1;
+    return {
+      ghz: (f / 1000).toFixed(1),
+      fast: i >= n - p.fastCores,
+      used1: true,
+      t1,
+      idleFrom: naiveStep - t1 > 0.5 ? t1 : null,
+      used2: used2.has(i),
+      t2: used2.has(i) ? raw2[i] * s2 : null,
+    };
+  });
+  return {
+    rows: rows.reverse(), // fastest cores on top
+    naiveStep,
+    tunedStep,
+    mult: p.naiveRate === 0 ? 0 : p.tunedRate / p.naiveRate,
+  };
+}
+
+const computed = presets.map((p) => ({ p, ...compute(p) }));
+const pct = (ms: number, axis: number) => `${((ms / axis) * 100).toFixed(2)}%`;
+---
+
+<Fig
+  id="a2"
+  title="A2 - Why eight threads is slower than four"
+  shows="One decode step cannot finish until its slowest chunk does. Spread across every core, the fast cores idle at the barrier while the LITTLE cores drag; on the derived thread count, the chunks land together and the step ends sooner."
+  data="measured"
+  dataNote="Step durations are measured (1 / decode tok/s of the naive and threads-only arms of the named contributed run); the per-core split inside each step is a schematic - equal chunks at speed proportional to reported cpu_capacity, else max clock."
+>
+  <div id="a2-root">
+    <div role="group" aria-label="Choose a core topology" class="flex flex-wrap gap-1.5">
+      {
+        computed.map(({ p }, i) => (
+          <button
+            type="button"
+            class="a2-preset chip cursor-pointer"
+            data-key={p.key}
+            data-on={i === 0 || undefined}
+            aria-pressed={i === 0 ? "true" : "false"}
+          >
+            {p.device}
+          </button>
+        ))
+      }
+    </div>
+
+    {
+      computed.map(({ p, rows, naiveStep, tunedStep, mult }, bi) => (
+        <div class="a2-block mt-4" data-key={p.key} data-naive={naiveStep.toFixed(2)} hidden={bi !== 0}>
+          <p class="text-[0.75rem] text-dim">{p.device} &middot; {p.soc}</p>
+          <div class="mt-3 grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* phase 1: naive */}
+            <div>
+              <p class="text-[0.75rem]">
+                <span class="font-bold">NAIVE</span>
+                <span class="text-dim"> - 8 threads, one chunk per core</span>
+              </p>
+              <div class="relative mt-2">
+                <div class="space-y-1">
+                  {rows.map((r) => (
+                    <div class="grid grid-cols-[2.75rem_1fr] items-center gap-2">
+                      <span class="flex items-center gap-1 text-[0.625rem] text-dim">
+                        <span
+                          class:list={[
+                            "inline-block w-2 h-2 rounded-[2px]",
+                            r.fast ? "bg-fill" : "border border-dim",
+                          ]}
+                          aria-hidden="true"
+                        />
+                        {r.ghz}
+                      </span>
+                      <div class="relative h-3.5 rounded-[3px] bg-surface border border-outline overflow-hidden">
+                        <div
+                          class="a2-chunk absolute inset-y-0 left-0 origin-left rounded-r-[3px]"
+                          data-t={r.t1.toFixed(2)}
+                          data-phase="1"
+                          style={`width:${pct(r.t1, naiveStep)}; background: var(--arm-${r.fast ? 3 : 2})`}
+                        />
+                        {r.idleFrom !== null && (
+                          <div
+                            class="a2-hatch absolute inset-y-0"
+                            data-at={r.t1.toFixed(2)}
+                            style={`left:${pct(r.idleFrom, naiveStep)}; right:0;
+                              background: repeating-linear-gradient(135deg, transparent 0 3px, var(--warn) 3px 4px);
+                              opacity: 0.55;`}
+                            title="idle - waiting at the barrier"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <span
+                  class="a2-barrier absolute inset-y-0 right-0 w-[2px] bg-danger"
+                  data-at={naiveStep.toFixed(2)}
+                  aria-hidden="true"
+                />
+              </div>
+              <div class="relative mt-1 h-5">
+                <p class="a2-lbl1 absolute right-0 text-[0.6875rem]" data-at={naiveStep.toFixed(2)}>
+                  barrier: step = <span class="font-bold">{naiveStep.toFixed(0)} ms</span>
+                  <span class="text-dim"> ({p.naiveRate} tok/s)</span>
+                </p>
+              </div>
+              <p class="text-[0.6875rem] text-dim mt-4">
+                <span class="t-warn">hatch</span> = fast cores idle, waiting on the slowest chunk
+              </p>
+            </div>
+
+            {/* phase 2: tuned */}
+            <div>
+              <p class="text-[0.75rem]">
+                <span class="font-bold">TUNED</span>
+                <span class="text-dim">
+                  {" "}- {p.tunedThreads} threads on the {p.tunedThreads} fastest cores
+                </span>
+              </p>
+              <div class="mt-2 space-y-1">
+                {rows.map((r) => (
+                  <div class="grid grid-cols-[2.75rem_1fr] items-center gap-2">
+                    <span class="flex items-center gap-1 text-[0.625rem] text-dim">
+                      <span
+                        class:list={[
+                          "inline-block w-2 h-2 rounded-[2px]",
+                          r.fast ? "bg-fill" : "border border-dim",
+                        ]}
+                        aria-hidden="true"
+                      />
+                      {r.ghz}
+                    </span>
+                    <div class="relative h-3.5 rounded-[3px] bg-surface border border-outline overflow-hidden">
+                      {r.t2 !== null ? (
+                        <div
+                          class="a2-chunk absolute inset-y-0 left-0 origin-left rounded-r-[3px]"
+                          data-t={r.t2.toFixed(2)}
+                          data-phase="2"
+                          style={`width:${pct(r.t2, naiveStep)}; background: var(--arm-3)`}
+                        />
+                      ) : (
+                        <span class="absolute inset-0 flex items-center pl-2 text-[0.5625rem] text-dim">
+                          unused
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div class="relative mt-1 h-5">
+                <p class="a2-lbl2 absolute text-[0.6875rem]" data-at={tunedStep.toFixed(2)} style={`left:${pct(tunedStep, naiveStep)}`}>
+                  step = <span class="font-bold">{tunedStep.toFixed(0)} ms</span>
+                  <span class="text-dim"> ({p.tunedRate} tok/s)</span>
+                </p>
+              </div>
+              <p class="a2-verdict mt-4 text-[0.8125rem]" data-at={tunedStep.toFixed(2)}>
+                measured on this phone: <span class="font-bold">{mult.toFixed(2)}x</span> decode from
+                the thread count alone
+                <span class="text-dim"> - {p.source}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+
+  <p slot="caption">
+    Published finding: thread-count tuning pays on every SoC in the dataset, 1.65x to 3.58x, and
+    no device regressed - a flat 4+4 gets about 1.8x, the widest-spread flagships about 3.5x
+    (benchmarks/CONTRIBUTED-DATA.md, as of 2026-07-23). Rows contributed since widen the live,
+    still-provisional spread to about 1.3x-3.8x; see the leaderboard. The Galaxy S23 is not a
+    preset here because its naive arm measured 6.72 &plusmn; 5.95 tok/s (88.5% relative SD), which
+    the dataset's own reading rules exclude.
+  </p>
+</Fig>
+
+<script>
+  import { registerFig, reducedMotion } from "../../scripts/figctl";
+
+  const root = document.getElementById("a2-root");
+  if (root) {
+    const blocks = [...root.querySelectorAll<HTMLElement>(".a2-block")];
+    const btns = [...root.querySelectorAll<HTMLButtonElement>(".a2-preset")];
+    const prm = reducedMotion();
+    let anims: Animation[] = [];
+    let active = blocks[0];
+    let started = false;
+
+    const WALL = 1800; // wall-clock ms for the naive step
+    const GAP = 500; // pause between phases
+
+    function build(block: HTMLElement) {
+      anims.forEach((a) => a.cancel());
+      anims = [];
+      const naive = parseFloat(block.dataset.naive!);
+      const scale = WALL / naive;
+      const p2 = WALL + GAP;
+      const add = (el: HTMLElement, kf: Keyframe[], dur: number, delay: number, easing = "linear") => {
+        const a = el.animate(kf, { duration: Math.max(dur, 1), delay, easing, fill: "both" });
+        a.pause();
+        anims.push(a);
+      };
+      block.querySelectorAll<HTMLElement>(".a2-chunk").forEach((el) => {
+        const t = parseFloat(el.dataset.t!) * scale;
+        const delay = el.dataset.phase === "2" ? p2 : 0;
+        add(el, [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], t, delay);
+      });
+      block.querySelectorAll<HTMLElement>(".a2-hatch").forEach((el) => {
+        add(el, [{ opacity: "0" }, { opacity: "0.55" }], 250, parseFloat(el.dataset.at!) * scale, "ease-out");
+      });
+      block.querySelectorAll<HTMLElement>(".a2-barrier, .a2-lbl1").forEach((el) => {
+        add(el, [{ opacity: "0" }, { opacity: "1" }], 250, parseFloat(el.dataset.at!) * scale, "ease-out");
+      });
+      block.querySelectorAll<HTMLElement>(".a2-lbl2, .a2-verdict").forEach((el) => {
+        add(el, [{ opacity: "0" }, { opacity: "1" }], 250, p2 + parseFloat(el.dataset.at!) * scale, "ease-out");
+      });
+    }
+
+    function play() {
+      anims.forEach((a) => a.play());
+    }
+
+    btns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btns.forEach((b) => {
+          const on = b === btn;
+          b.toggleAttribute("data-on", on);
+          b.setAttribute("aria-pressed", String(on));
+        });
+        blocks.forEach((bl) => (bl.hidden = bl.dataset.key !== btn.dataset.key));
+        active = blocks.find((bl) => !bl.hidden)!;
+        if (!prm) {
+          build(active);
+          if (started) play();
+        }
+      });
+    });
+
+    if (!prm) {
+      build(active);
+      registerFig(root.closest("[data-fig]") as HTMLElement, {
+        start() {
+          started = true;
+          play();
+        },
+        pause() {
+          anims.forEach((a) => a.pause());
+        },
+        resume() {
+          play();
+        },
+        replay() {
+          anims.forEach((a) => (a.currentTime = 0));
+          play();
+        },
+      });
+    }
+  }
+</script>

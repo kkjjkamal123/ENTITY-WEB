@@ -1,0 +1,368 @@
+---
+import Layout from "../components/Layout.astro";
+import MetricsStrip from "../components/MetricsStrip.astro";
+import CaveatCard from "../components/CaveatCard.astro";
+import Plot from "../components/Plot.astro";
+import { withBase } from "../lib/url";
+
+const fourArm = {
+  cmf: {
+    device: "CMF Phone 1 (Nothing A015), Dimensity 7300",
+    start: "31 C",
+    rows: [
+      ["Naive (8 thr, all cores)", "10.8 ± 1.3", "111 ± 13.6", "4,720", "4.25 ± 0.12", "2.61 ± 0.33"],
+      ["Threads only (4 thr, no pin)", "15.0 ± 0.5", "137 ± 1.4", "3,803", "4.09 ± 0.17", "3.66 ± 0.24"],
+      ["ENTITY Auto (4 thr, pinned)", "18.1 ± 0.4", "139 ± 0.8", "3,739", "3.96 ± 0.07", "4.59 ± 0.17"],
+      ["Efficiency (4 thr, LITTLE)", "15.0 ± 0.3", "82.5 ± 0.2", "6,272", "3.51 ± 0.02", "4.28 ± 0.09"],
+    ],
+    earns: ["+39%", "+21%"],
+  },
+  oppo: {
+    device: "OPPO CPH2729, Snapdragon 6 Gen 4",
+    start: "35.3 C",
+    rows: [
+      ["Naive (8 thr, all cores)", "9.7 ± 0.5", "152 ± 4.5", "3,473", "2.87 ± 1.04", "3.37 ± 1.05"],
+      ["Threads only (4 thr, no pin)", "17.4 ± 0.3", "129 ± 22.4", "4,026", "2.52 ± 0.90", "6.80 ± 1.82"],
+      ["ENTITY Auto (4 thr, pinned)", "17.5 ± 0.2", "129 ± 23.1", "4,026", "1.78 ± 0.71", "9.85 ± 2.54"],
+      ["Efficiency (4 thr, LITTLE)", "14.3 ± 0.1", "127 ± 1.9", "4,101", "3.06 ± 0.96", "4.74 ± 1.57"],
+    ],
+    earns: ["+80%", "+1%"],
+  },
+};
+---
+
+<Layout
+  title="Evidence - ENTITY"
+  description="The benchmark method, the four-arm five-run record, the energy result, the competitor comparison with both sessions published, and every limit stated in the open."
+  path="/evidence/"
+>
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pt-12 pb-8">
+    <p class="microlabel">Method first &middot; numbers second &middot; limits always visible</p>
+    <h1 class="mt-3 text-2xl md:text-3xl font-bold">The record, with its boundaries</h1>
+    <p class="mt-3 max-w-[68ch] text-dim text-[0.875rem]">
+      Every number here is measured on a phone, bounded, and traceable to a raw CSV or a named
+      file in the source repository. Where two measurements disagree, both are published with
+      their dates.
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pb-10">
+    <h2 class="text-xl font-bold">Method</h2>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="card p-5 text-[0.8125rem] leading-relaxed space-y-2">
+        <p>
+          Synthetic llama-bench workload: <span class="font-bold">PP 512 / TG 128</span>, on an
+          unplugged phone, one discarded PP 64 / TG 16 warm-up, then the arms in fixed order:
+          naive, threads-only, Auto (plus the optional efficiency arm).
+        </p>
+        <p>
+          <span class="font-bold">Thermal control before every pass, in every arm</span> - so
+          the ordering cannot favour the last arm: at least 15 s, up to 90 s, until battery
+          temperature returns within 0.5 C of the pre-benchmark reading (without waiting below
+          37.5 C).
+        </p>
+        <p>
+          Values are the <span class="font-bold">median across runs, ± population standard
+          deviation</span>. Every pass exports to CSV: per-pass metrics, 150 ms telemetry
+          samples, per-core clock traces, and the per-arm affinity policy.
+        </p>
+      </div>
+      <div class="card p-5 text-[0.8125rem] leading-relaxed">
+        <p>
+          <span class="font-bold">The mask the kernel actually applied is logged per arm</span>,
+          so a failed <code>sched_setaffinity</code> cannot masquerade as "pinning earns
+          nothing":
+        </p>
+        <pre class="scroll-x mt-3 rounded-[6px] border border-outline bg-bg p-3 text-[0.6875rem] leading-relaxed"><code>adb logcat -s ai-chat | grep "effective cpus"
+
+pinned inference to 8 fast cores, effective cpus [0..7]   &lt;- naive
+affinity off, 4 threads placed by the scheduler           &lt;- threads-only
+pinned inference to 4 fast cores, effective cpus [4,5,6,7]&lt;- Auto</code></pre>
+        <p class="mt-3 text-dim">
+          If threads-only and Auto print the same mask, the ablation did not happen and its
+          attribution must not be published (benchmarks/REPRODUCIBILITY.md).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <MetricsStrip />
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
+    <h2 class="text-xl font-bold">The benchmark of record: four arms, five runs per arm</h2>
+    <p class="mt-2 text-dim text-[0.875rem] max-w-[68ch]">
+      ENTITY Bench v1.1.0 exports, 2026-07-18, Llama-3.2-1B Q4_0, unplugged, raw CSVs retained
+      in <code>benchmarks/results/</code>.
+    </p>
+    {
+      Object.values(fourArm).map((dev) => (
+        <div class="mt-6">
+          <p class="text-[0.875rem] font-bold">
+            {dev.device} <span class="text-dim font-normal">&middot; start {dev.start}</span>
+          </p>
+          <div class="scroll-x mt-2 card">
+            <table class="data-table min-w-[720px]">
+              <caption class="sr-only">Four-arm results for {dev.device}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Arm</th>
+                  <th scope="col" class="num">Decode tok/s</th>
+                  <th scope="col" class="num">Prompt tok/s</th>
+                  <th scope="col" class="num">TTFT ms</th>
+                  <th scope="col" class="num">Power W</th>
+                  <th scope="col" class="num">tok/W</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dev.rows.map((r, i) => (
+                  <tr class:list={[i === 2 && "font-bold"]}>
+                    {r.map((c, j) => (
+                      <td class:list={[j > 0 && "num"]}>{c}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="mt-2 text-[0.8125rem]">
+            Thread count earns <span class="font-bold">{dev.earns[0]}</span> decode; pinning
+            earns <span class="font-bold">{dev.earns[1]}</span>.
+          </p>
+        </div>
+      ))
+    }
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <Plot
+        file="four_arm_decode_20260718.png"
+        alt="Bar chart: decode throughput and tokens per watt for naive, threads-only, Auto and efficiency arms on the CMF Phone 1 and OPPO CPH2729"
+        regen="python3 benchmarks/plot_four_arm.py"
+      >
+        The current headline export, both devices, all four arms.
+      </Plot>
+      <div class="space-y-4">
+        <CaveatCard title="What the two SoCs disagree about">
+          <p>
+            On the Dimensity 7300, pinning buys decode: +21%, with Auto's slowest run (17.5)
+            faster than threads-only's fastest (15.9) - non-overlapping distributions. On the
+            Snapdragon 6 Gen 4 it buys power instead: decode +0.6% (noise) while median draw
+            falls 2.52 to 1.78 W. On both phones the LITTLE-pinned arm loses on speed and on
+            tok/W. Per-SoC behaviour, not a universal rule.
+          </p>
+        </CaveatCard>
+        <CaveatCard title="The July record read pinning at ~0%">
+          <p>
+            The July three-run sets on this same CMF phone measured pinning at -1% to +1%, and
+            the 2026-07-15 evening set put the pinned and unpinned medians dead level at 15.9
+            tok/s with the pinned spread collapsing from ±1.58 to ±0.09 - repeatability, not
+            speed. The five-run exports supersede it; the difference between the two records is
+            kept as an open question and the raw CSVs keep it answerable.
+          </p>
+        </CaveatCard>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
+    <h2 class="text-xl font-bold">The July three-run record (history, retained)</h2>
+    <div class="scroll-x mt-4 card">
+      <table class="data-table min-w-[720px]">
+        <caption class="sr-only">July 2026 three-run decode record on the CMF Phone 1</caption>
+        <thead>
+          <tr>
+            <th scope="col">Model / runs</th>
+            <th scope="col" class="num">Naive 8 thr</th>
+            <th scope="col" class="num">Threads only</th>
+            <th scope="col" class="num">Auto</th>
+            <th scope="col" class="num">Thread count</th>
+            <th scope="col" class="num">Pinning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1B Q3_K_L, 3 runs</td><td class="num">8.8 ± 0.50</td><td class="num">16.9 ± 0.08</td><td class="num">16.7 ± 1.3</td><td class="num">+92%</td><td class="num">-1%</td></tr>
+          <tr><td>1B Q4_0, 1 run</td><td class="num">7.9</td><td class="num">14.7</td><td class="num">14.7</td><td class="num">+86%</td><td class="num">+0%</td></tr>
+          <tr><td>1B Q4_0, 3 runs (midday)</td><td class="num">7.7 ± 0.78</td><td class="num">15.9 ± 0.22</td><td class="num">16.0 ± 2.1</td><td class="num">+106%</td><td class="num">+1%</td></tr>
+          <tr><td>1B Q4_0, 3 runs (evening)</td><td class="num">8.6 ± 0.82</td><td class="num">15.9 ± 1.58</td><td class="num">15.9 ± 0.09</td><td class="num">+85%</td><td class="num">+0%</td></tr>
+          <tr><td>3B Q4_0, 1 run</td><td class="num">3.1</td><td class="num">6.0</td><td class="num">6.8</td><td class="num">+94%</td><td class="num">+13%</td></tr>
+          <tr><td>3B Q4_0, 1 run</td><td class="num">3.5</td><td class="num">6.3</td><td class="num">6.3</td><td class="num">+81%</td><td class="num">+0%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-[0.8125rem] text-dim max-w-[68ch]">
+      The two 3B runs disagree, a third taken while charging measured -16%, and single 3B runs
+      swing about ±15% - the +13% is noise, not a finding. The honest summary across every
+      three-run set is "roughly 2x from the thread count", not one fixed percentage, because the
+      naive baseline is the noisiest arm.
+    </p>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <Plot
+        file="decode_attribution.png"
+        alt="Decode attribution chart across the July three-run sets: the thread count carries the multiplier, pinning is near zero"
+        regen="python3 benchmarks/plot_results.py"
+      >
+        The July attribution: thread count carries it; pinning ~0% in this record.
+      </Plot>
+      <Plot
+        file="contributed_multidevice.png"
+        alt="Contributed multi-device chart: naive to threads-only and threads-only to optimized steps per device"
+        regen="python3 benchmarks/plot_contributed.py"
+      >
+        The contributed dataset's two steps per device - the thread step generalises, the pin
+        step is device-dependent.
+      </Plot>
+    </div>
+  </section>
+
+  <MetricsStrip />
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
+    <h2 class="text-xl font-bold">Energy: the same work, 42-47% less battery</h2>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div class="text-[0.8125rem] leading-relaxed space-y-3">
+        <p>
+          The CSV export records battery current every 150 ms, so the energy a pass cost is
+          integrated from the measured power curve (trapezoid over 273 samples), not inferred.
+          From the 2026-07-15 evening export, first pass of each arm:
+        </p>
+        <div class="scroll-x card">
+          <table class="data-table min-w-[420px]">
+            <caption class="sr-only">Energy for 128 tokens per arm</caption>
+            <thead>
+              <tr><th scope="col">Arm</th><th scope="col" class="num">Duration</th><th scope="col" class="num">Mean power</th><th scope="col" class="num">Energy, 128 tok</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Naive (8 threads)</td><td class="num">19.9 s</td><td class="num">4.34 W</td><td class="num">86 J</td></tr>
+              <tr><td>Threads only</td><td class="num">12.2 s</td><td class="num">3.98 W</td><td class="num">49 J (-44%)</td></tr>
+              <tr class="font-bold"><td>ENTITY Auto</td><td class="num">11.8 s</td><td class="num">4.22 W</td><td class="num">50 J (-42%)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          All three configurations draw roughly the same watts. ENTITY does not win by sipping
+          less current - <span class="font-bold">it wins because it finishes in 11.8 s instead
+          of 19.9 s</span>. The earlier 2026-07-14 single-run export measured the same shape:
+          95 / 57 / 51 J. Threads-only vs Auto is inside the noise on this metric.
+        </p>
+        <CaveatCard title="Boundary">
+          <p>
+            Battery current reporting is OEM-dependent: comparative on one device, not lab-grade
+            metering. The energy script refuses to run on a charging export, because the current
+            would be the charger's rather than the workload's.
+          </p>
+        </CaveatCard>
+      </div>
+      <div class="space-y-4">
+        <Plot
+          file="energy_per_task.png"
+          alt="Energy per 128-token task per arm, integrated from the measured power curve"
+          regen="python3 benchmarks/plot_energy.py benchmarks/results/entity_1b-q4_0_unplugged_3run_20260715b.csv"
+        >
+          Energy is the area under the power curve - the left panel is a literal picture of the
+          right one.
+        </Plot>
+        <Plot
+          file="energy_efficiency.png"
+          alt="Tokens per watt comparison chart"
+          regen="python3 benchmarks/plot_results.py"
+        >
+          Tokens per watt across configurations.
+        </Plot>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
+    <h2 class="text-xl font-bold">Against the competition - both sessions, because they disagree</h2>
+    <p class="mt-2 text-dim text-[0.875rem] max-w-[68ch]">
+      Same phone (CMF Phone 1), same <code>Llama-3.2-1B-Instruct-Q4_0</code>, same PP 512 / TG
+      128, each app's own benchmark screen. Current session 2026-07-20: all three apps
+      re-measured the same day, five runs each, 30-minute cooldown between apps.
+    </p>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div>
+        <div class="scroll-x card">
+          <table class="data-table min-w-[460px]">
+            <caption class="sr-only">Three-app comparison, 2026-07-20 session</caption>
+            <thead>
+              <tr><th scope="col">App</th><th scope="col" class="num">Prompt</th><th scope="col" class="num">Decode</th><th scope="col">Threads</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>PocketPal AI</td><td class="num">88.32</td><td class="num">13.9</td><td>6</td></tr>
+              <tr><td>Arm AI Chat (Arm's own app)</td><td class="num">121 ± 2.99</td><td class="num">12.4 ± 0.08</td><td>not reported</td></tr>
+              <tr class="font-bold"><td>ENTITY</td><td class="num">128</td><td class="num">18.2</td><td>4, pinned</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-3 text-[0.8125rem]">
+          Against Arm's own reference app, on Arm's own silicon: <span class="font-bold">+6%
+          prompt, +47% decode</span>. Against PocketPal: +45% and +31%. Decode is where the
+          thread-count policy acts; the prompt column is close because all three apps run Q4_0
+          and reach the same KleidiAI kernels.
+        </p>
+        <CaveatCard title="The repeat did not agree - and that is the point">
+          <p>
+            The same three apps measured on 2026-07-14 read differently: PocketPal and Arm
+            swapped places on decode (Arm led 12.9 to 10.9 then; PocketPal leads 13.9 to 12.4
+            now), ENTITY's prompt margin over Arm narrowed from +11% to +6%, and its decode
+            margin widened from +21% to +47%. PocketPal's decode swung about 27% between
+            sessions on identical hardware while Arm's held within about 4% - and that swing is
+            what flipped the ranking. <strong>A figure from one session must never be paired
+            with a figure from another:</strong> the most inflated pairing available here reads
+            +67% where the matched figure is +31%. Both sessions are published with their dates;
+            neither is deleted.
+          </p>
+        </CaveatCard>
+      </div>
+      <Plot
+        file="three_app_comparison.png"
+        alt="Bar chart comparing PocketPal AI, Arm AI Chat and ENTITY on prompt and decode throughput, 2026-07-20 session"
+        regen="python3 benchmarks/plot_competitors.py"
+      >
+        The 2026-07-20 session. ENTITY's live-chat readout is deliberately not used - the other
+        two figures are synthetic PP/TG benchmarks and a live-chat rate is a different quantity.
+      </Plot>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
+    <h2 class="text-xl font-bold">Limits</h2>
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CaveatCard title="What these numbers are">
+        <ul class="list-disc pl-4 space-y-1.5">
+          <li>Synthetic benchmark values, not live multi-turn chat speed.</li>
+          <li>Author-measured: two phones, two models, one quantization pair. Not a universal multiplier - the contributed dataset exists to widen exactly this.</li>
+          <li>Single-run rows are indicative only; the observed single-pass noise floor is roughly ±15-20%.</li>
+          <li>Power and tok/W are recorded only while unplugged; the app hides them while charging because USB input invalidates the battery-current reading.</li>
+        </ul>
+      </CaveatCard>
+      <CaveatCard title="Evidence status">
+        <p>
+          The per-pass CSVs for the v2.0.0 reference runs were never retained - the export was
+          broken (Android killed the activity behind the file picker and every export produced a
+          0-byte CSV plus a "CSV exported" toast; fixed in v2.1.0 by staging to cache). Since
+          then seven raw exports are retained in <code>benchmarks/results/</code>, including
+          both five-run four-arm records and the contributed-dataset CSV. Competitor figures are
+          read off each app's own results screen - reproducible by installing the same apps, but
+          not re-analysable; ENTITY's own figure comes from ENTITY Bench, whose per-run CSV is
+          the only raw evidence any of the three apps can produce.
+        </p>
+      </CaveatCard>
+    </div>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Plot file="kleidiai_prompt_ttft.png" alt="Prompt throughput and TTFT, Q3_K_L versus Q4_0" regen="python3 benchmarks/plot_results.py">
+        The quantization gate's cost (see the <a href={withBase("/optimizations/#a4")}>gate figure</a>).
+      </Plot>
+      <Plot file="thermal_analysis.png" alt="Battery temperature and Android thermal state during a benchmark export">
+        Thermal trace: battery temperature paired with the OS thermal signal.
+      </Plot>
+      <Plot file="cpu_frequency.png" alt="Per-core live clocks during a benchmark export, performance cluster versus efficiency cluster">
+        Per-core clocks during the pass - the affinity policy, visible in silicon.
+      </Plot>
+    </div>
+    <p class="mt-6 text-[0.8125rem] text-dim">
+      Full record: <code>benchmarks/BENCHMARKS.md</code> &middot; protocol:
+      <code>benchmarks/REPRODUCIBILITY.md</code> &middot; comparison method and both sessions:
+      <code>benchmarks/competitor-comparison/</code> &middot; crowd data:
+      <a href={withBase("/leaderboard/")}>the leaderboard</a>.
+    </p>
+  </section>
+</Layout>

@@ -1,0 +1,193 @@
+---
+import Layout from "../components/Layout.astro";
+import { withBase } from "../lib/url";
+
+interface Entry {
+  claim: string;
+  broke: string;
+  cost: string;
+  replaced: string;
+}
+const entries: Entry[] = [
+  {
+    claim: "Pinning to the big cores earns +121%",
+    broke:
+      "A three-arm ablation. v2.0.0 measured a large decode gain after adding sched_setaffinity and credited it to core affinity - it was the project's headline. Adding a middle arm, the tuned thread count with affinity switched off, showed the thread count was carrying almost all of it. Affinity was a small residue, and on some devices a negative one.",
+    cost: "The headline claim of the first real release, and a rewrite of the benchmark to have three arms instead of two.",
+    replaced:
+      "The naive / threads-only / optimized ablation that everything since has used, and a rule the project has kept: an optimization that has not been isolated has not been measured. Two configurations that differ in two ways cannot attribute anything.",
+  },
+  {
+    claim: "Prompt processing is compute-bound, so give it every core",
+    broke:
+      "Measurement on the reference Dimensity 7300: PP 512 on Llama-3.2-1B-Q4_0 runs at 116 tok/s on 4 threads and 86 tok/s across all 8. An A55 is roughly a third of an A78, so the widened pool finished its share late and every GEMM waited on the stragglers. Textbook, and wrong here.",
+    cost: "A feature that had shipped and been described as an optimization was removed.",
+    replaced: "n_pp = n_gen. Which fixed the 4+4 case - and quietly created entry 5 below.",
+  },
+  {
+    claim: "Q4_K falls back to generic ggml",
+    broke:
+      "Reading the ggml source rather than repeating the claim. Q4_K, Q5_K and Q6_K do have Arm dotprod repacking GEMM paths. The real gap is narrower and more specific: i8mm/SMMLA.",
+    cost: "A documentation claim that was flattering and false. It had propagated into several files.",
+    replaced:
+      "KLEIDIAI-QUANTS.md, which states per quantization what actually reaches which kernel - and marks the i8mm question as untestable on the hardware available at the time rather than guessing.",
+  },
+  {
+    claim: "The benchmark measures what the app ships",
+    broke:
+      "A Galaxy S26 Ultra export from a stranger. BenchmarkActivity.autoGenThreads() had restated the topology rule as availableProcessors() - 2 instead of calling it. When the clamp moved from 4 to 6 the two drifted: on a 2+6 flagship the native side derived 2 threads while the benchmark's copy returned 6 - so the threads-only arm ran six unpinned threads against an Auto arm running two. Two variables between arms: the exact attribution error the three-arm design exists to prevent.",
+    cost: "Every CSV that device produced recorded the wrong thread count for both arms.",
+    replaced:
+      "One definition, called from both places. And a habit: a rule that is restated will drift; a rule that is called cannot.",
+  },
+  {
+    claim: "A flagship will thread wider than a 4+4 phone",
+    broke:
+      "Contributed benchmarks from four SoCs nobody here owns. The derivation did the opposite of the written prediction. It counted cores within 10% of the fastest clock, and every modern flagship puts its prime core 17-20% above its own big cluster - so the count collapsed to 1, and only the minimum clamp pulled it back to 2. Because prefill inherited that number, prompt processing ran on two threads on every flagship: a Dimensity 7300 prefills at 139 tok/s while an SM8550 - stronger silicon, with i8mm - manages 111. Both development phones were immune: the CMF is a flat 4+4 and the OPPO's prime sits only 4.3% above its big cluster. The bug was invisible on every device the author owned.",
+    cost: "A published prediction had to be rewritten as a falsification, and prefill on every flagship had been degraded for several releases.",
+    replaced:
+      "Decode and prefill now derive different widths from different signals - cpu_capacity for the performance cluster, clock for the narrow decode set. The decode rule was deliberately left alone, because it is the only one validated against devices actually measured.",
+  },
+  {
+    claim: "Pinning earns energy",
+    broke:
+      "Isolating the right axis. The optimized arm showed 2.4x-3.4x better tokens per watt than naive, and pinning looked like the thing earning it - but optimized-vs-naive changes two things. On the axis that isolates pinning, threads-only vs optimized: median +0.6% decode, -1.5% tokens per watt, positive on only 3 of 6 rows. The Pixel 10 is the clean demonstration: +29.3% faster, +33.5% more power, tok/W falls 3.2%.",
+    cost: "The energy story had to be re-attributed from pinning to thread count - the same correction as entry 1, on a different metric, weeks later.",
+    replaced:
+      "Core placement became a user setting rather than an assumption, and the app now reports the measurement from the user's own phone instead of asserting a default.",
+  },
+  {
+    claim: "No wattage is showing on this phone",
+    broke:
+      "It was showing it. An OPPO CPH2737 reported 2.7 microwatts of decode and 11 million tokens per watt - not missing, absurd. And the cause was not where anyone would look: PowerMath's careful microamp/milliamp heuristic was fine. The voltage was wrong. EXTRA_VOLTAGE is documented in millivolts and that device reports whole volts, so both candidate wattages fell below the plausibility floor, the heuristic gave up, and returned the documented unit. Two independent 1000x errors compounding into 1e6.",
+    cost: "Six contributed rows with unusable power. Two of them had been marked power_valid = true, so the only-trustworthy-power view was serving nonsense.",
+    replaced:
+      "normalizeVoltageMv() resolves the voltage unit before the current unit, and a rule: when a derived value is absurd, check every input's unit, not just the suspicious one. A plausibility heuristic is only as good as what you hand it, and it fails silently.",
+  },
+  {
+    claim: "The device is a Snapdragon",
+    broke:
+      "Small, but it belongs here. The phone in entry 7 was reported as a Snapdragon. It reports mt6897 - a MediaTek Dimensity 8300. The bug it exposed is an OEM kernel unit quirk, so attributing it to the wrong vendor would have sent the next person looking in entirely the wrong place.",
+    cost: "Nothing but embarrassment - caught before it shipped anywhere that mattered.",
+    replaced: "Read the device's own report, not the spec sheet you remember.",
+  },
+];
+---
+
+<Layout
+  title="Journey - every claim ENTITY withdrew"
+  description="The honest record: eight claims this project had to withdraw - the +121% pinning headline, the widened prompt pool, the flagship thread-width prediction, the energy attribution - with what broke each one and what replaced it."
+  path="/journey/"
+>
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pt-12 pb-10">
+    <p class="microlabel">docs/JOURNEY.md</p>
+    <h1 class="mt-3 text-2xl md:text-3xl font-bold max-w-[24ch]">
+      What we believed, what broke it, what it cost
+    </h1>
+    <p class="mt-4 max-w-[68ch] text-[0.9375rem] leading-relaxed">
+      Most of this project's real progress came from being wrong in a way that was measurable.
+      This page is the record of that: every claim that had to be withdrawn, why it survived as
+      long as it did, and what replaced it.
+      <span class="font-bold">The falsifications are the evidence that the surviving numbers
+      were actually checked.</span> A number that was never challenged is a number nobody has
+      reason to trust.
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pb-12">
+    <div id="jt" class="relative pl-6 md:pl-10">
+      <div class="absolute left-1.5 md:left-3 top-1 bottom-1 w-px bg-outline" aria-hidden="true"></div>
+      <div
+        id="jt-fill"
+        class="absolute left-1.5 md:left-3 top-1 bottom-1 w-px bg-fill origin-top"
+        style="transform: scaleY(0)"
+        aria-hidden="true"
+      >
+      </div>
+      <ol class="space-y-14">
+        {
+          entries.map((e, i) => (
+            <li class="relative max-w-[72ch]">
+              <span
+                class="absolute -left-6 md:-left-10 top-1.5 ml-[1.5px] md:ml-[3px] -translate-x-1/2 w-2.5 h-2.5 rounded-full border-2 border-fill bg-bg"
+                aria-hidden="true"
+              />
+              <p class="microlabel">{String(i + 1).padStart(2, "0")} &middot; the belief</p>
+              <h2 class="mt-1 text-lg md:text-xl font-bold leading-snug">"{e.claim}"</h2>
+              <div class="mt-4 space-y-4 text-[0.875rem] leading-relaxed">
+                <div>
+                  <p class="microlabel !text-[0.625rem]">What broke it</p>
+                  <p class="mt-1">{e.broke}</p>
+                </div>
+                <div>
+                  <p class="microlabel !text-[0.625rem]">What it cost</p>
+                  <p class="mt-1 text-dim">{e.cost}</p>
+                </div>
+                <div>
+                  <p class="microlabel !text-[0.625rem]">What replaced it</p>
+                  <p class="mt-1">{e.replaced}</p>
+                </div>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card p-6">
+      <p class="microlabel">What actually generalised</p>
+      <ul class="mt-3 space-y-2.5 text-[0.875rem] leading-relaxed">
+        <li><span class="font-bold">Thread-count tuning is the lever.</span> It pays on every SoC measured, 1.65x to 3.58x, and it is the only thing in this project that has never regressed on a new device.</li>
+        <li><span class="font-bold">Pinning is a speed lever with a power cost</span> - device-dependent in sign, roughly neutral-to-negative on energy. Correctly a setting, not a default.</li>
+        <li><span class="font-bold">The two inference phases want different thread widths</span>, and conflating them costs prefill badly on any chip with a prime core.</li>
+        <li><span class="font-bold">Frequency cannot rank cores; cpu_capacity can.</span> An A55 at 2.0 GHz and an A78 at 2.5 GHz are 25% apart in clock and roughly 3x apart in throughput.</li>
+      </ul>
+    </div>
+    <div class="card p-6">
+      <p class="microlabel">The method, stated once</p>
+      <ol class="mt-3 space-y-2.5 text-[0.875rem] leading-relaxed list-decimal pl-5">
+        <li><span class="font-bold">Isolate before attributing.</span> Two configurations differing in two ways explain nothing.</li>
+        <li><span class="font-bold">Call the rule, never restate it.</span> Restated rules drift silently.</li>
+        <li><span class="font-bold">Measure on silicon you do not own.</span> Two phones cannot falsify a claim about Arm.</li>
+        <li><span class="font-bold">Publish the falsification, not just the fix.</span> A project that only records its wins is indistinguishable from one that never checked.</li>
+      </ol>
+      <p class="mt-4 text-[0.8125rem] text-dim">
+        The open questions are kept in the same spirit. The current one: decode width sits on the
+        minimum-clamp floor on prime-core flagships and nobody has swept it there - ENTITY
+        Bench's SWEEP mode exists precisely so that can become entry 9. See
+        <a href={withBase("/leaderboard/")}>the leaderboard</a>.
+      </p>
+    </div>
+  </section>
+
+  <script>
+    /* scroll-linked progress spine - the only motion this page needs */
+    import { reducedMotion } from "../scripts/figctl";
+    const fill = document.getElementById("jt-fill");
+    const wrap = document.getElementById("jt");
+    if (fill && wrap) {
+      if (reducedMotion()) {
+        fill.style.transform = "scaleY(1)";
+      } else {
+        let ticking = false;
+        const update = () => {
+          ticking = false;
+          const r = wrap.getBoundingClientRect();
+          const vh = window.innerHeight;
+          const progress = Math.min(1, Math.max(0, (vh * 0.7 - r.top) / r.height));
+          fill.style.transform = `scaleY(${progress})`;
+        };
+        const onScroll = () => {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+          }
+        };
+        addEventListener("scroll", onScroll, { passive: true });
+        update();
+      }
+    }
+  </script>
+</Layout>

@@ -1,0 +1,37 @@
+---
+/*
+  The bench app's optimization indicator: solid = live on this device,
+  outline = not present. `chips` is [label, on][]; order mirrors the app.
+*/
+interface Props {
+  chips: [string, boolean][];
+  legend?: boolean;
+  size?: "sm" | "md";
+}
+const { chips, legend = false, size = "md" } = Astro.props;
+---
+
+<div>
+  <ul class:list={["flex flex-wrap", size === "sm" ? "gap-1" : "gap-1.5"]} role="list">
+    {
+      chips.map(([label, on]) => (
+        <li>
+          <span
+            class:list={["chip", size === "sm" && "!text-[0.625rem] !px-2"]}
+            data-on={on || undefined}
+            data-dashed={!on || undefined}
+          >
+            {label}
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+  {
+    legend && (
+      <p class="mt-2 text-[0.6875rem] text-dim">
+        solid = live on this device &middot; outline = not present
+      </p>
+    )
+  }
+</div>

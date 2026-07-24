@@ -1,0 +1,44 @@
+---
+---
+<button
+  id="theme-toggle"
+  type="button"
+  class="btn !p-1.5 !border-outline"
+  aria-label="Switch to light theme"
+  title="Toggle theme"
+>
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.5"></circle>
+    <path d="M8 1.75 A 6.25 6.25 0 0 0 8 14.25 Z" fill="currentColor"></path>
+  </svg>
+</button>
+
+<script>
+  const btn = document.getElementById("theme-toggle")!;
+  const root = document.documentElement;
+
+  const current = (): "light" | "dark" => {
+    const set = root.getAttribute("data-theme");
+    if (set === "light" || set === "dark") return set;
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  };
+
+  const label = () => {
+    btn.setAttribute(
+      "aria-label",
+      current() === "dark" ? "Switch to light theme" : "Switch to dark theme"
+    );
+  };
+
+  btn.addEventListener("click", () => {
+    const next = current() === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try {
+      localStorage.setItem("entity-theme", next);
+    } catch {}
+    label();
+    window.dispatchEvent(new CustomEvent("entity-theme"));
+  });
+
+  label();
+</script>

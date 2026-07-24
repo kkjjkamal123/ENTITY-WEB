@@ -1,0 +1,58 @@
+{
+  "chat-home": {
+    "w": 780,
+    "h": 1733
+  },
+  "chat-menu": {
+    "w": 780,
+    "h": 1733
+  },
+  "chat-models": {
+    "w": 780,
+    "h": 1733
+  },
+  "chat-model-info": {
+    "w": 780,
+    "h": 1733
+  },
+  "chat-benchmark": {
+    "w": 780,
+    "h": 1733
+  },
+  "chat-about": {
+    "w": 780,
+    "h": 1733
+  },
+  "chat-settings-1": {
+    "w": 780,
+    "h": 1733
+  },
+  "chat-settings-2": {
+    "w": 780,
+    "h": 1733
+  },
+  "chat-benchmark-history": {
+    "w": 780,
+    "h": 1733
+  },
+  "bench-device": {
+    "w": 780,
+    "h": 1733
+  },
+  "bench-config-result": {
+    "w": 780,
+    "h": 1733
+  },
+  "bench-settings": {
+    "w": 780,
+    "h": 1733
+  },
+  "bench-contribute": {
+    "w": 780,
+    "h": 1733
+  },
+  "bench-full-result": {
+    "w": 780,
+    "h": 1733
+  }
+}

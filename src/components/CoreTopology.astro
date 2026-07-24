@@ -1,0 +1,64 @@
+---
+/*
+  Core topology strip: one cell per core, width proportional to cpu_capacity
+  where the kernel reports it, else to max frequency. Fast cluster renders
+  solid; the slow tier renders outlined. Never colour-only: cells carry their
+  clock (md size) and the strip carries a text summary for screen readers.
+*/
+interface Core {
+  mhz: number;
+  fast: boolean;
+  capacity?: number | null;
+}
+interface Props {
+  cores: Core[];
+  size?: "sm" | "md";
+  label?: string;
+}
+const { cores, size = "md", label } = Astro.props;
+
+const weight = (c: Core) => (c.capacity ? c.capacity : c.mhz);
+const max = Math.max(...cores.map(weight));
+const summary =
+  label ??
+  Object.entries(
+    cores.reduce<Record<string, number>>((acc, c) => {
+      const k = `${(c.mhz / 1000).toFixed(1)}GHz${c.fast ? " fast" : ""}`;
+      acc[k] = (acc[k] ?? 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([k, n]) => `${n}x ${k}`)
+    .join(" + ");
+---
+
+<div
+  class:list={["flex items-end", size === "sm" ? "gap-[3px] h-4" : "gap-1 h-9"]}
+  role="img"
+  aria-label={`Core topology: ${summary}`}
+>
+  {
+    cores.map((c) => (
+      <div
+        class:list={[
+          "rounded-[3px] border flex items-end justify-center overflow-hidden",
+          c.fast ? "bg-fill border-fill" : "border-dim/60 bg-transparent",
+          size === "sm" ? "w-2" : "w-9",
+        ]}
+        style={`height:${Math.round((weight(c) / max) * 100)}%`}
+        aria-hidden="true"
+      >
+        {size === "md" && (
+          <span
+            class:list={[
+              "text-[0.5625rem] leading-tight pb-0.5",
+              c.fast ? "text-onfill" : "text-dim",
+            ]}
+          >
+            {(c.mhz / 1000).toFixed(1)}
+          </span>
+        )}
+      </div>
+    ))
+  }
+</div>

@@ -1,0 +1,272 @@
+---
+import Layout from "../components/Layout.astro";
+import MetricsStrip from "../components/MetricsStrip.astro";
+import CaveatCard from "../components/CaveatCard.astro";
+import A3Backend from "../components/figures/A3Backend.astro";
+import A4Kleidi from "../components/figures/A4Kleidi.astro";
+import A5Context from "../components/figures/A5Context.astro";
+import A6Thermal from "../components/figures/A6Thermal.astro";
+import A7Phases from "../components/figures/A7Phases.astro";
+import { withBase } from "../lib/url";
+---
+
+<Layout
+  title="Optimizations - ENTITY"
+  description="Every Arm-specific runtime lever ENTITY ships - backend dispatch, core affinity, thread derivation, adaptive context, thermal guard, energy telemetry - each with what it measured and where it lives in the source."
+  path="/optimizations/"
+>
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pt-12 pb-8">
+    <p class="microlabel">docs/OPTIMIZATIONS.md &middot; the app's ABOUT screen</p>
+    <h1 class="mt-3 text-2xl md:text-3xl font-bold">Every lever, with sources</h1>
+    <p class="mt-3 max-w-[68ch] text-dim text-[0.875rem]">
+      What each runtime decision does, why it works, what it measured, and where it is in the
+      source. Negative results are kept at equal weight - two of these levers were regressions
+      and were removed or demoted, and that is stated here, not buried.
+    </p>
+  </section>
+
+  <MetricsStrip />
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 space-y-10">
+    <!-- 1. backend dispatch -->
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] gap-6 items-start">
+      <div>
+        <h2 class="text-lg font-bold">Runtime-selected CPU backend</h2>
+        <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+          The build compiles seven Arm CPU backend variants, armv8.0 through armv9.2, each with
+          Arm KleidiAI micro-kernels, via stock llama.cpp <code>GGML_CPU_ALL_VARIANTS=ON</code> -
+          a build decision, not hand-written kernels. At startup
+          <code>ggml_backend_load_all_from_path</code> loads every variant in the APK and ggml
+          scores them against the physical CPU; the best supported one runs. Old phones without
+          dotprod get the armv8.0 fallback instead of SIGILL.
+        </p>
+        <p class="mt-2 text-[0.75rem] text-dim">
+          Source: <code>lib/build.gradle.kts</code>, <code>ai_chat.cpp: init()</code>. Cost:
+          release APK ~9.8 MB against ~7 MB single-variant.
+        </p>
+      </div>
+      <A3Backend />
+    </div>
+
+    <!-- 2. affinity -->
+    <div class="card p-6">
+      <h2 class="text-lg font-bold">Big-core affinity</h2>
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-6 text-[0.8125rem] leading-relaxed">
+        <div class="text-dim space-y-2">
+          <p>
+            <code>build_fast_cpu_set()</code> ranks every online core by
+            <code>cpuinfo_max_freq</code> - live hardware detection, not a hardcoded mask - and
+            <code>pin_to_fast_cores()</code> applies it with <code>sched_setaffinity</code> on
+            every decode entry point, because ggml's worker pool spawns lazily and inherits the
+            calling thread's mask. Each benchmark arm logs the mask the kernel actually applied,
+            so a failed pin cannot pass as "pinning earns nothing".
+          </p>
+          <p>
+            Source: <code>ai_chat.cpp: build_fast_cpu_set / pin_to_fast_cores</code>; the
+            ablation switch is <code>g_pin_cores</code>.
+          </p>
+        </div>
+        <div class="space-y-2">
+          <p>
+            <span class="font-bold">Measured:</span> on the five-run 2026-07-18 exports, pinning
+            over the same thread count earns <span class="font-bold">+21% decode</span> on the
+            Dimensity 7300 (distributions non-overlapping) and
+            <span class="font-bold">+1% decode but median power 2.52 &rarr; 1.78 W</span> on the
+            Snapdragon 6 Gen 4. July's three-run sets read ~0%. Across the contributed dataset
+            the median is +0.6% decode and -1.5% tok/W - device-dependent, so v3.5.0 made
+            placement a <a href={withBase("/apps/")}>user setting</a>.
+          </p>
+          <p class="text-dim">
+            The mechanism figure is <a href={withBase("/#a2")}>A2 on the overview</a>; the full
+            pinning story is <a href={withBase("/leaderboard/#a8")}>A8 beside the leaderboard</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. thread derivation -->
+    <div class="card p-6">
+      <h2 class="text-lg font-bold">Adaptive thread count - two widths, two signals</h2>
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-6 text-[0.8125rem] leading-relaxed">
+        <div class="space-y-2">
+          <p>
+            <span class="font-bold">Decode</span> derives its width from the top frequency
+            cluster: the count of cores within 10% of the fastest clock, clamped to 2-6. On the
+            reference 4+4 that yields 4. Decode does not want width - an SM8550 in the dataset
+            decodes <span class="font-bold">23.8 tok/s on 2 threads and 6.72 on 8</span> -
+            because it is bandwidth-bound and two threads already saturate the bus.
+          </p>
+          <p>
+            <span class="font-bold">Prefill</span> (since v3.5.0) derives a separate, usually
+            wider set from the kernel's own per-core <code>cpu_capacity</code> (1024 = strongest):
+            every core strictly above the slowest tier, never narrower than decode. Frequency
+            cannot rank cores - an A55 at 2.0 GHz and an A78 at 2.5 GHz are 25% apart in clock
+            and roughly 3x apart in throughput.
+          </p>
+        </div>
+        <div class="text-dim space-y-2">
+          <p>
+            Why two rules? The single clock rule was validated on the devices actually measured -
+            and the contributed dataset then proved it wrong for prefill on prime-core flagships,
+            where the 10% window admits only the prime core and the count collapsed to 2. The
+            decode rule was deliberately left alone; the prefill rule moved to capacity. The full
+            falsification is on the <a href={withBase("/leaderboard/")}>leaderboard page</a> and
+            in <a href={withBase("/journey/")}>the journey</a>.
+          </p>
+          <p>
+            Source: <code>ai_chat.cpp: top_cluster_core_count / prompt_thread_count</code>,
+            mirrored by <code>BenchmarkActivity.autoGenThreads()</code> - one definition, called
+            from both places, after a drift bug proved why (Journey section 4).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. adaptive context -->
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] gap-6 items-start">
+      <div>
+        <h2 class="text-lg font-bold">Adaptive context</h2>
+        <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+          Auto mode buckets on GGUF file size and current free RAM to choose a 2048, 4096 or
+          8192-token window before the model loads. Because weights are memory-mapped and paged
+          on demand, the KV cache is the real RAM-pressure lever - which is what lets a 3B-class
+          model run inside about 2 GB free instead of OOMing.
+        </p>
+        <p class="mt-2 text-[0.75rem] text-dim">
+          Source: <code>MainActivity.adaptiveContext()</code>,
+          <code>ai_chat.cpp: init_context()</code> (reads back what llama.cpp actually
+          allocated).
+        </p>
+      </div>
+      <A5Context />
+    </div>
+
+    <!-- 5. thermal -->
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] gap-6 items-start">
+      <div>
+        <h2 class="text-lg font-bold">Thermal-aware guard</h2>
+        <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+          Every eighth generated token, Auto mode asks Android's thermal status (cached for one
+          second) and inserts a cooperative delay: 0 ms at NONE or LIGHT, 6 ms at MODERATE,
+          12 ms at SEVERE and above. Efficiency mode doubles the delay and caps inference at two
+          threads. It is a soft back-off - no affinity change, no realtime request, no root-only
+          thermal zones.
+        </p>
+        <p class="mt-2 text-[0.75rem] text-dim">
+          Source: <code>ChatViewModel.ThermalGuard.delayMs()</code>.
+        </p>
+      </div>
+      <A6Thermal />
+    </div>
+
+    <!-- 6-8 small levers -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="card p-5">
+        <h2 class="text-[0.9375rem] font-bold">KV session cache</h2>
+        <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+          Each conversation's decoded state is rebuilt on demand: switching to or restoring a
+          persisted chat primes the native KV through the same chat-template path as live turns
+          ("Preparing conversation..."), so the next reply continues seamlessly instead of
+          starting from a cold cache. Long conversations never hard-stop: on overflow the oldest
+          half of the turns is trimmed and the system prompt always survives.
+        </p>
+        <p class="mt-2 text-[0.75rem] text-dim">
+          Source: <code>ai_chat.cpp: primeHistoryNative / shift_context</code>.
+        </p>
+      </div>
+      <div class="card p-5">
+        <h2 class="text-[0.9375rem] font-bold">mmap weights</h2>
+        <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+          GGUF weights are memory-mapped, paged in on demand rather than fully resident. RAM
+          pressure therefore comes from the KV cache, which the adaptive-context rule sizes -
+          the pairing that lets a 773 MB model report 1.2 GB free while generating.
+        </p>
+        <p class="mt-2 text-[0.75rem] text-dim">Source: llama.cpp mmap loading, used as shipped.</p>
+      </div>
+      <div class="card p-5">
+        <h2 class="text-[0.9375rem] font-bold">Energy telemetry</h2>
+        <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+          watts = |battery current| x voltage / 1e9, sampled every 150 ms during benchmark passes
+          and once per render tick in chat. Both OEM current units are disambiguated by a
+          plausibility window, and since v3.6.0 the voltage unit is normalised first - a
+          contributed device reported whole volts where millivolts are documented and broke watts
+          by a factor of a million. Power and tok/W hide entirely while charging.
+        </p>
+        <p class="mt-2 text-[0.75rem] text-dim">
+          Source: <code>MainActivity.snapMetrics()</code>, <code>PowerMath</code>,
+          <code>BenchmarkActivity</code>.
+        </p>
+      </div>
+    </div>
+
+    <!-- ADPF -->
+    <CaveatCard title="Shipped to be measured, not assumed: ADPF deadline hints (v3.6.0)">
+      <p>
+        Affinity controls where work runs, not how urgent it is. The one sanctioned route into
+        the kernel's frequency machinery for an unprivileged app is an Android performance-hint
+        session: ENTITY declares each decode step's target duration and reports the actual, and
+        the platform adjusts clocks and placement with the vendor's own tuning.
+        <strong>No speed or energy claim is attached to it yet</strong> - ENTITY Bench ships an
+        <code>adpf</code> arm so the hint can be measured against threads-only and against the
+        hard mask, and until devices report back it is documented as a mechanism, not a result.
+      </p>
+    </CaveatCard>
+  </section>
+
+  <MetricsStrip />
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 space-y-6">
+    <h2 class="text-xl md:text-2xl font-bold">The quantization gate, and why decode does not care</h2>
+    <A4Kleidi />
+    <A7Phases />
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
+    <h2 class="text-xl md:text-2xl font-bold">Negative results, at equal weight</h2>
+    <p class="mt-2 text-dim max-w-[68ch] text-[0.875rem]">
+      Two of the ideas above shipped, measured slower, and were removed or demoted. They stay on
+      this page at the same size as the wins.
+    </p>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CaveatCard title="Regression: widening prompt processing to all cores">
+        <p>
+          Until v2.1.0, prompt processing spread across every online core, on the textbook
+          assumption that a compute-bound phase wants all the hardware. Measured on the reference
+          4+4: <strong>135 tok/s on the 4 fast cores, 86 tok/s across all 8</strong>. An A55 is
+          roughly a third of an A78, so every GEMM waited on the stragglers. Removed in v2.1.0;
+          the right width is an empirical property of the SoC, which is why the benchmark decides
+          it rather than an assumption.
+        </p>
+      </CaveatCard>
+      <CaveatCard title="Not an efficiency win: pinning to the LITTLE cluster">
+        <p>
+          The bench app's fourth arm pins Auto's thread count to the efficiency cores to ask
+          whether they are actually efficient for LLM decode. Answer, on both phones measured:
+          <strong>no</strong> - slower and worse tokens per watt than the performance cluster. On
+          the CMF it also collapses prompt from 139 to 82.5 tok/s and pushes TTFT from 3.7 s to
+          6.3 s, in exchange for the lowest raw draw (3.51 W). A real option to expose; not a
+          default.
+        </p>
+      </CaveatCard>
+      <CaveatCard title="Boundary: what the app deliberately does not do">
+        <p>
+          No realtime scheduling. A historical Termux experiment with
+          <code>--prio 3</code> (SCHED_RR) held 4.4 tok/s under background-download contention
+          where the naive config collapsed to 0.7 - a 6.3x ceiling for this class of technique -
+          but <code>sched_setscheduler</code> from an unprivileged app is unreliable across OEM
+          skins and can starve the UI. That CLI result is documented history, never claimed as
+          app behaviour; grep <code>lib/src/main/cpp/</code> for <code>SCHED_RR</code> and find
+          nothing.
+        </p>
+      </CaveatCard>
+      <CaveatCard title="Boundary: what the backend variants do not promise">
+        <p>
+          Shipping seven variants does not make every model fast: KleidiAI kernels exist for
+          Q4_0 and Q8_0 only, so a K-quant model misses them on any backend (see the gate above).
+          And no device in the public dataset reports SME yet, so the two armv9.2 variants have
+          never been the loaded one in the wild.
+        </p>
+      </CaveatCard>
+    </div>
+  </section>
+</Layout>

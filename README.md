@@ -1,0 +1,85 @@
+# ENTITY - project site
+
+The public site for ENTITY, an offline on-device LLM runtime for Arm Android phones:
+animated explainers of how the optimization works, a live device leaderboard over the
+contributed benchmark dataset, and the evidence and falsification record.
+
+Live: https://kkjjkamal123.github.io/ENTITY/
+
+## Stack
+
+Astro + Tailwind v4, static output, no client framework. Interactive figures and the
+leaderboard are vanilla-TypeScript islands. Total figure JavaScript is under 10 KB gzipped;
+the leaderboard island (including the inlined data snapshot) is ~12 KB gzipped.
+
+## Local development
+
+```bash
+npm install
+npm run dev        # http://localhost:4321/ENTITY/
+npm run build      # static build into dist/
+npm run preview    # serve dist/ at the deploy subpath
+```
+
+The build depends only on committed files. Three helper scripts regenerate committed
+artifacts and need the private source working copy (`../github/`, `../PHOTOS ENTITY */`)
+present locally:
+
+```bash
+npm run build:images     # screenshots -> public/shots, icons, plots -> public/plots
+npm run build:changelog  # releases/*.md -> src/data/changelog.json
+npm run build:og         # Open Graph PNGs -> public/og (needs JetBrains Mono in fontconfig)
+```
+
+## Leaderboard data
+
+`src/data/leaderboard.json` is a committed snapshot of `public.bench_results` (Supabase,
+PostgREST). The page renders the snapshot immediately and replaces it with a live fetch when
+the network allows; on failure it says so and keeps the snapshot.
+
+```bash
+npm run refresh:leaderboard   # refresh the snapshot (requires the anon read policy)
+```
+
+`.github/workflows/refresh-leaderboard.yml` runs the same refresh daily and commits on
+change, which redeploys the site. The publishable key in `src/lib/supabase.ts` is designed
+to be public; with row-level security it can only insert and select rows
+(`benchmarks/CONTRIBUTE-BACKEND.md` in the source repo documents why).
+
+Display rules implemented in `src/lib/bench.ts` / `src/scripts/leaderboard.ts`, each tracing
+to `benchmarks/CONTRIBUTED-DATA.md`:
+
+- power and tok/W never render where `power_valid` is false (charging runs);
+- rows whose arms disagree on watts by more than 4x, or read under 0.8 W during decode,
+  are flagged "power implausible" and excluded from power columns and aggregates (raw
+  values stay visible in the detail panel) - the same judgment the dataset doc applies to
+  the device that motivated it;
+- run count is always shown; single-pass rows are marked provisional (documented 1-pass
+  noise floor: up to 19.6%);
+- arms with decode relative SD above 25% are flagged and excluded from aggregates;
+- one row per device + quantization, newest first; byte-identical re-uploads are collapsed
+  and counted; older runs expand inside the row.
+
+SoC marketing names are mapped only where unambiguous (repo-documented ones, plus
+Snapdragon 865 / Dimensity 700 / Helio G37); MT6886 ships under several Dimensity names and
+stays raw.
+
+## Where the content comes from
+
+Every number on the site traces to a named file in the source repository
+(`kkjjkamal123/ENTITY---Arm-Create-AI-Optimization-Challenge`); the map is
+[`CONTENT-SOURCES.md`](CONTENT-SOURCES.md). Figures are labelled `measured` or `schematic`;
+a schematic never borrows the look of data.
+
+Design tokens are the shipped app's own palette (ENTITY v3.4.0, which retired pure #000 and
+#FFF for halation). Status hues were validated with a palette validator against both themes;
+see the comments in `src/styles/global.css`.
+
+## Deploying
+
+GitHub Pages via `.github/workflows/deploy.yml` on push to `main` (Pages source:
+GitHub Actions). `astro.config.mjs` sets `site` and `base` for the project subpath; internal
+links go through `withBase()` in `src/lib/url.ts`.
+
+APKs are distributed as GitHub Release assets on this repository
+(`releases/latest/download/<file>`), not committed to the tree.

@@ -1,0 +1,252 @@
+---
+/*
+  A8 - Pinning is a speed lever with a power cost.
+  Interactive: pick a device, flip pinning off/on (threads-only vs optimized,
+  same thread count, affinity the only difference), watch decode and watts
+  move and the tok/W readout follow.
+  Poster (no JS / reduced motion): the four devices as a small multiple of
+  decode delta vs tok/W delta.
+  Sources: Pixel 10 and Galaxy S23 from the contributed dataset
+  (benchmarks/CONTRIBUTED-DATA.md); CMF Phone 1 and OPPO CPH2729 from the
+  five-run four-arm exports of 2026-07-18 (benchmarks/BENCHMARKS.md).
+*/
+import Fig from "../Fig.astro";
+
+interface Dev {
+  key: string;
+  name: string;
+  soc: string;
+  n: string;
+  unp: { dec: number; w: number; tokw: number }; // threads-only
+  pin: { dec: number; w: number; tokw: number }; // optimized
+  note: string;
+}
+const devs: Dev[] = [
+  {
+    key: "pixel10",
+    name: "Pixel 10",
+    soc: "Tensor G5",
+    n: "3 runs, contributed",
+    unp: { dec: 21.5, w: 4.157, tokw: 5.172 },
+    pin: { dec: 27.8, w: 5.55, tokw: 5.009 },
+    note: "the clean demonstration: +29.3% decode for +33.5% power, so tok/W falls 3.2%",
+  },
+  {
+    key: "cmf",
+    name: "CMF Phone 1",
+    soc: "Dimensity 7300",
+    n: "5 runs, 2026-07-18 export",
+    unp: { dec: 15.0, w: 4.09, tokw: 3.66 },
+    pin: { dec: 18.1, w: 3.96, tokw: 4.59 },
+    note: "+21% decode, distributions non-overlapping - pinning wins outright here",
+  },
+  {
+    key: "oppo",
+    name: "OPPO CPH2729",
+    soc: "Snapdragon 6 Gen 4",
+    n: "5 runs, 2026-07-18 export",
+    unp: { dec: 17.4, w: 2.52, tokw: 6.8 },
+    pin: { dec: 17.5, w: 1.78, tokw: 9.85 },
+    note: "decode +1% (noise), but median power 2.52 to 1.78 W - a power win",
+  },
+  {
+    key: "s23",
+    name: "Galaxy S23",
+    soc: "Snapdragon 8 Gen 2",
+    n: "3 runs, contributed",
+    unp: { dec: 23.4, w: 6.181, tokw: 3.7995 },
+    pin: { dec: 23.8, w: 6.25, tokw: 3.8083 },
+    note: "+1.7% decode, +1.1% watts, +0.2% tok/W - essentially nothing",
+  },
+];
+const pct = (a: number, b: number) => ((b / a - 1) * 100);
+const fmtD = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+const maxDec = 30;
+const maxW = 7;
+---
+
+<Fig
+  id="a8"
+  title="A8 - Pinning is a speed lever with a power cost"
+  shows="Threads-only vs optimized run the same thread count; affinity is the only difference. Flip it per device: decode and watts move together, and tokens per watt often moves the other way."
+  data="measured"
+  dataNote="Pixel 10 and Galaxy S23: contributed dataset, 3 runs per arm (benchmarks/CONTRIBUTED-DATA.md). CMF Phone 1 and OPPO CPH2729: five-run four-arm exports, 2026-07-18 (benchmarks/BENCHMARKS.md)."
+  controls={false}
+>
+  <div id="a8-root">
+    <div class="a8-interactive" hidden>
+      <div class="flex flex-wrap items-center gap-2">
+        <div role="group" aria-label="Device" class="flex flex-wrap gap-1.5">
+          {
+            devs.map((d, i) => (
+              <button
+                type="button"
+                class="a8-dev chip cursor-pointer"
+                data-key={d.key}
+                data-on={i === 0 || undefined}
+                aria-pressed={i === 0 ? "true" : "false"}
+              >
+                {d.name}
+              </button>
+            ))
+          }
+        </div>
+        <button
+          type="button"
+          id="a8-toggle"
+          class="btn !py-1 !px-3 !text-[0.6875rem] ml-auto"
+          aria-pressed="false"
+        >
+          pinning: off
+        </button>
+      </div>
+
+      <div class="mt-4 grid gap-3">
+        <div class="grid grid-cols-[5.5rem_1fr_5rem] items-center gap-3">
+          <span class="text-[0.75rem] text-dim">decode</span>
+          <div class="h-4 rounded-[4px] border border-outline bg-surface overflow-hidden">
+            <div id="a8-bar-dec" class="h-full rounded-r-[4px] origin-left bg-fill" style="width:100%; transform: scaleX(0.5)"></div>
+          </div>
+          <span id="a8-val-dec" class="num text-[0.8125rem]">-</span>
+        </div>
+        <div class="grid grid-cols-[5.5rem_1fr_5rem] items-center gap-3">
+          <span class="text-[0.75rem] text-dim">power</span>
+          <div class="h-4 rounded-[4px] border border-outline bg-surface overflow-hidden">
+            <div id="a8-bar-w" class="h-full rounded-r-[4px] origin-left" style="width:100%; transform: scaleX(0.5); background: var(--warn)"></div>
+          </div>
+          <span id="a8-val-w" class="num text-[0.8125rem]">-</span>
+        </div>
+        <p class="text-[0.8125rem]">
+          tokens per watt: <span id="a8-tokw" class="font-bold">-</span>
+          <span id="a8-tokw-delta" class="text-dim"></span>
+        </p>
+        <p id="a8-note" class="text-[0.75rem] text-dim"></p>
+      </div>
+      <hr class="my-5" />
+    </div>
+
+    {/* poster: the small multiple - always the complete statement */}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {
+        devs.map((d) => {
+          const dd = pct(d.unp.dec, d.pin.dec);
+          const dt = pct(d.unp.tokw, d.pin.tokw);
+          const dw = pct(d.unp.w, d.pin.w);
+          return (
+            <div class="rounded-[8px] border border-outline p-3 min-w-0">
+              <p class="text-[0.75rem] font-bold leading-tight">{d.name}</p>
+              <p class="text-[0.625rem] text-dim">{d.soc} &middot; {d.n}</p>
+              <dl class="mt-2 space-y-1 text-[0.6875rem]">
+                {[
+                  ["decode", dd],
+                  ["watts", dw],
+                  ["tok/W", dt],
+                ].map(([label, v]) => {
+                  const val = v as number;
+                  const w = Math.min((Math.abs(val) / 35) * 50, 50);
+                  const left = val >= 0 ? 50 : 50 - w;
+                  return (
+                    <div class="grid grid-cols-[3rem_1fr_2.9rem] items-center gap-1">
+                      <dt class="text-dim">{label}</dt>
+                      <dd class="relative h-2 rounded-[2px] bg-surface border border-outline overflow-hidden">
+                        <span class="absolute inset-y-0 left-1/2 w-px bg-grid" aria-hidden="true" />
+                        <span
+                          class="absolute inset-y-0 bg-fill rounded-[1px]"
+                          style={`left:${left}%; width:${w}%`}
+                          aria-hidden="true"
+                        />
+                      </dd>
+                      <dd
+                        class:list={[
+                          "num",
+                          val >= 2 ? "t-ok" : val <= -2 ? "t-danger" : "text-dim",
+                        ]}
+                      >
+                        {fmtD(val)}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </div>
+          );
+        })
+      }
+    </div>
+  </div>
+
+  <p slot="caption">
+    On the axis that isolates pinning (threads-only to optimized), the contributed dataset's
+    median is <strong>+0.6% decode and -1.5% tok/W, positive on only 3 of 6 rows</strong>. That is
+    why v3.5.0 made core placement a user setting instead of an assumption, and why the app
+    reports the measurement from the user's own phone.
+  </p>
+</Fig>
+
+<script>
+  import { reducedMotion } from "../../scripts/figctl";
+
+  const root = document.getElementById("a8-root");
+  if (root) {
+    const devs = [
+      { key: "pixel10", unp: { dec: 21.5, w: 4.157, tokw: 5.172 }, pin: { dec: 27.8, w: 5.55, tokw: 5.009 }, note: "the clean demonstration: +29.3% decode for +33.5% power, so tok/W falls 3.2%" },
+      { key: "cmf", unp: { dec: 15.0, w: 4.09, tokw: 3.66 }, pin: { dec: 18.1, w: 3.96, tokw: 4.59 }, note: "+21% decode, distributions non-overlapping - pinning wins outright here" },
+      { key: "oppo", unp: { dec: 17.4, w: 2.52, tokw: 6.8 }, pin: { dec: 17.5, w: 1.78, tokw: 9.85 }, note: "decode +1% (noise), but median power 2.52 to 1.78 W - a power win" },
+      { key: "s23", unp: { dec: 23.4, w: 6.181, tokw: 3.7995 }, pin: { dec: 23.8, w: 6.25, tokw: 3.8083 }, note: "+1.7% decode, +1.1% watts, +0.2% tok/W - essentially nothing" },
+    ];
+    const MAXD = 30, MAXW = 7;
+    const ui = root.querySelector<HTMLElement>(".a8-interactive")!;
+    ui.hidden = false;
+    const bars = {
+      dec: document.getElementById("a8-bar-dec")!,
+      w: document.getElementById("a8-bar-w")!,
+    };
+    const vals = {
+      dec: document.getElementById("a8-val-dec")!,
+      w: document.getElementById("a8-val-w")!,
+      tokw: document.getElementById("a8-tokw")!,
+      delta: document.getElementById("a8-tokw-delta")!,
+      note: document.getElementById("a8-note")!,
+    };
+    const toggle = document.getElementById("a8-toggle") as HTMLButtonElement;
+    const btns = [...root.querySelectorAll<HTMLButtonElement>(".a8-dev")];
+    let dev = devs[0];
+    let pinned = false;
+    const smooth = reducedMotion() ? "" : "transform 240ms cubic-bezier(0.2,0,0,1)";
+    bars.dec.style.transition = smooth;
+    bars.w.style.transition = smooth;
+
+    function render() {
+      const s = pinned ? dev.pin : dev.unp;
+      bars.dec.style.transform = `scaleX(${Math.min(1, s.dec / MAXD)})`;
+      bars.w.style.transform = `scaleX(${Math.min(1, s.w / MAXW)})`;
+      vals.dec.textContent = `${s.dec.toFixed(1)} tok/s`;
+      vals.w.textContent = `${s.w.toFixed(2)} W`;
+      vals.tokw.textContent = s.tokw.toFixed(2);
+      const d = ((dev.pin.tokw / dev.unp.tokw - 1) * 100).toFixed(1);
+      vals.delta.textContent = pinned
+        ? ` (${Number(d) >= 0 ? "+" : ""}${d}% vs unpinned)`
+        : " (affinity off - what an upstream llama.cpp -t N run does)";
+      vals.note.textContent = dev.note;
+      toggle.textContent = pinned ? "pinning: on" : "pinning: off";
+      toggle.setAttribute("aria-pressed", String(pinned));
+    }
+
+    toggle.addEventListener("click", () => {
+      pinned = !pinned;
+      render();
+    });
+    btns.forEach((b) =>
+      b.addEventListener("click", () => {
+        btns.forEach((x) => {
+          const on = x === b;
+          x.toggleAttribute("data-on", on);
+          x.setAttribute("aria-pressed", String(on));
+        });
+        dev = devs.find((d) => d.key === b.dataset.key)!;
+        render();
+      })
+    );
+    render();
+  }
+</script>

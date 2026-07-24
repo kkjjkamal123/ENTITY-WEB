@@ -1,0 +1,34 @@
+---
+/*
+  The chat app's live stats bar, used as site chrome between sections.
+  Values are the ones visible in the shipped screenshot (Home.png):
+  100tok - 16.4t/s - TTFT 299ms - 33.0C - 4.34W - CPU 47% - 1.2GB
+*/
+const items = [
+  "100tok",
+  "16.4t/s",
+  "TTFT 299ms",
+  "33.0°C",
+  "4.34W",
+  "CPU 47%",
+  "1.2GB",
+];
+---
+
+<div
+  class="border-y border-outline bg-surface/60 overflow-hidden"
+  role="separator"
+  aria-label="Live metrics divider, values from the shipped app"
+>
+  <div class="mx-auto max-w-[1200px] px-4 md:px-6">
+    <p class="flex flex-wrap items-center gap-x-3 gap-y-0 py-2 text-[0.6875rem] tracking-[0.08em] text-dim whitespace-nowrap">
+      {items.map((it, i) => (
+        <>
+          {i > 0 && <span aria-hidden="true">&middot;</span>}
+          <span>{it}</span>
+        </>
+      ))}
+      <span class="ml-auto hidden md:inline text-dim">live stats bar, ENTITY v3.6.2</span>
+    </p>
+  </div>
+</div>

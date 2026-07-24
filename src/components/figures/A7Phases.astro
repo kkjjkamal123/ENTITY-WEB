@@ -1,0 +1,115 @@
+---
+/*
+  A7 - Prefill versus decode.
+  Why one optimization helps prompt processing and not token generation.
+  Prefill: a 512-token prompt becomes one large GEMM - every compute lane
+  busy; the bottleneck is arithmetic, so a better kernel directly helps.
+  Decode: one token at a time, the whole weight matrix streamed from DRAM per
+  token - the memory bus saturates while compute lanes sit partly idle.
+  The mechanism panel is schematic; the conclusion numbers are measured.
+*/
+import Fig from "../Fig.astro";
+---
+
+<Fig
+  id="a7"
+  title="A7 - Prefill versus decode"
+  shows="Prompt processing is one big compute-bound GEMM - kernels matter. Decode streams the whole weight matrix from memory for every single token - bandwidth matters, kernels mostly cannot."
+  data="schematic"
+  dataNote="Mechanism panels are schematic. The conclusion is measured: moving Q3_K_L to Q4_0 on the CMF Phone 1 wins prompt +183% and loses decode -13% (docs/KLEIDIAI-QUANTS.md), because decode tracks bytes per weight, not kernel quality."
+>
+  <div id="a7-root" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="rounded-[8px] border border-outline p-4">
+      <p class="text-[0.75rem]"><span class="font-bold">PREFILL</span> <span class="text-dim">- 512 tokens, one large GEMM</span></p>
+      <div class="mt-3 space-y-1.5" aria-hidden="true">
+        {
+          [0, 1, 2, 3].map((i) => (
+            <div class="h-3 rounded-[3px] bg-surface border border-outline overflow-hidden">
+              <div class="a7-lane h-full w-full bg-fill" style={`animation-delay: ${i * 0.12}s`} />
+            </div>
+          ))
+        }
+        <p class="text-[0.625rem] text-dim">compute lanes: all busy</p>
+        <div class="h-2.5 rounded-[3px] bg-surface border border-outline overflow-hidden mt-2">
+          <div class="a7-bus h-full w-1/3" style="background: var(--arm-2)"></div>
+        </div>
+        <p class="text-[0.625rem] text-dim">memory bus: comfortable</p>
+      </div>
+      <p class="mt-3 text-[0.75rem]">
+        bottleneck: <span class="font-bold">arithmetic</span>
+        <span class="text-dim">- a better kernel (KleidiAI, i8mm/SMMLA) directly helps</span>
+      </p>
+    </div>
+
+    <div class="rounded-[8px] border border-outline p-4">
+      <p class="text-[0.75rem]"><span class="font-bold">DECODE</span> <span class="text-dim">- one token at a time</span></p>
+      <div class="mt-3 space-y-1.5" aria-hidden="true">
+        {
+          [0, 1, 2, 3].map((i) => (
+            <div class="h-3 rounded-[3px] bg-surface border border-outline overflow-hidden">
+              <div
+                class:list={["a7-lane-idle h-full", i < 2 ? "bg-fill w-2/5" : "w-1/5"]}
+                style={i >= 2 ? "background: var(--arm-1)" : ""}
+              />
+            </div>
+          ))
+        }
+        <p class="text-[0.625rem] text-dim">compute lanes: waiting on data</p>
+        <div class="h-2.5 rounded-[3px] border border-outline overflow-hidden mt-2 relative bg-surface">
+          <div class="a7-busflow absolute inset-y-0 left-0 w-[200%]" style="background: repeating-linear-gradient(90deg, var(--warn) 0 10px, transparent 10px 16px)"></div>
+        </div>
+        <p class="text-[0.625rem]"><span class="t-warn">memory bus: saturated</span> <span class="text-dim">- the full weight matrix streams per token</span></p>
+      </div>
+      <p class="mt-3 text-[0.75rem]">
+        bottleneck: <span class="font-bold">memory bandwidth</span>
+        <span class="text-dim">- tracks bytes per weight; kernel quality cannot help a workload waiting on DRAM</span>
+      </p>
+    </div>
+  </div>
+
+  <p slot="caption">
+    This split is why the Q4_0 move wins prompt throughput by +183% and TTFT by -64% while decode
+    gives up 13% (Q4_0 carries ~6% more bytes than Q3_K_L) - and why decode gains come from
+    thread placement and count, not from kernels.
+  </p>
+</Fig>
+
+<style>
+  @keyframes a7pulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+  @keyframes a7flow {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+  [data-playing] .a7-lane {
+    animation: a7pulse 1.2s ease-in-out infinite;
+  }
+  [data-playing] .a7-busflow {
+    animation: a7flow 1.1s linear infinite;
+  }
+</style>
+
+<script>
+  import { registerFig, reducedMotion } from "../../scripts/figctl";
+
+  const root = document.getElementById("a7-root");
+  if (root && !reducedMotion()) {
+    const fig = root.closest("[data-fig]") as HTMLElement;
+    registerFig(fig, {
+      start() {
+        fig.setAttribute("data-playing", "");
+      },
+      pause() {
+        fig.removeAttribute("data-playing");
+      },
+      resume() {
+        fig.setAttribute("data-playing", "");
+      },
+      replay() {
+        fig.setAttribute("data-playing", "");
+      },
+    });
+  }
+</script>

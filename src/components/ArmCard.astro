@@ -1,0 +1,38 @@
+---
+/*
+  One benchmark arm: name, config, value bar, value +- sd.
+  `frac` is the bar length relative to the best arm in the same group (0..1).
+  `tone` picks the ordinal arm shade: 1 = naive, 2 = threads-only, 3 = auto,
+  4 = efficiency (recessive).
+*/
+interface Props {
+  name: string;
+  config: string;
+  value: number;
+  sd?: number;
+  unit?: string;
+  frac: number;
+  tone?: 1 | 2 | 3 | 4;
+  emph?: boolean;
+}
+const { name, config, value, sd, unit = "tok/s", frac, tone = 2, emph = false } = Astro.props;
+const pct = Math.max(2, Math.round(frac * 100));
+---
+
+<div class="grid grid-cols-[7.5rem_1fr_auto] items-center gap-3 py-1.5">
+  <div class="min-w-0">
+    <p class:list={["text-[0.8125rem] leading-tight truncate", emph && "font-bold"]}>{name}</p>
+    <p class="text-[0.6875rem] text-dim leading-tight truncate">{config}</p>
+  </div>
+  <div class="h-4 rounded-[4px] bg-surface border border-outline overflow-hidden" aria-hidden="true">
+    <div
+      class="h-full rounded-r-[4px]"
+      style={`width:${pct}%; background: var(--arm-${tone})`}
+    >
+    </div>
+  </div>
+  <p class:list={["num text-[0.8125rem] whitespace-nowrap", emph && "font-bold"]}>
+    {value}{sd !== undefined && <span class="text-dim text-[0.6875rem]"> &plusmn;{sd}</span>}
+    <span class="text-dim text-[0.6875rem]"> {unit}</span>
+  </p>
+</div>

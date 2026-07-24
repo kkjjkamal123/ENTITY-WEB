@@ -1,0 +1,38 @@
+---
+import { withBase } from "../lib/url";
+const repo = "https://github.com/kkjjkamal123/ENTITY---Arm-Create-AI-Optimization-Challenge";
+---
+
+<footer class="mt-20 border-t border-outline">
+  <div class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 grid grid-cols-1 gap-8 md:grid-cols-3 text-[0.8125rem]">
+    <div>
+      <p class="font-bold tracking-[0.3em]">ENTITY</p>
+      <p class="mt-2 text-dim">
+        Adaptive on-device LLM runtime for Arm phones. Fully offline. Apache-2.0.
+      </p>
+      <p class="mt-2 text-dim">Arm Create: AI Optimization Challenge 2026.</p>
+    </div>
+    <div>
+      <p class="microlabel">Project</p>
+      <ul class="mt-2 space-y-1">
+        <li><a href={repo}>Source repository</a></li>
+        <li><a href={withBase("/apps/#download")}>APK downloads</a></li>
+        <li><a href={withBase("/leaderboard/")}>Device leaderboard</a></li>
+        <li><a href={withBase("/journey/")}>Withdrawn claims</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="microlabel">Built on</p>
+      <ul class="mt-2 space-y-1">
+        <li><a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a></li>
+        <li><a href="https://github.com/ARM-software/kleidiai">Arm KleidiAI</a></li>
+        <li>
+          <a href="https://github.com/ggml-org/llama.cpp/pull/25701"
+            >llama.cpp PR #25701</a
+          >
+          <span class="text-dim">- KleidiAI fallback warning, merged upstream</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</footer>

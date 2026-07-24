@@ -1,0 +1,179 @@
+---
+import Layout from "../components/Layout.astro";
+import { withBase } from "../lib/url";
+import changelog from "../data/changelog.json";
+
+const REPO = "https://github.com/kkjjkamal123/ENTITY---Arm-Create-AI-Optimization-Challenge";
+const links = [
+  ["Architecture", "docs/ARCHITECTURE.md", "UI to JNI to llama.cpp design, component map, token flow"],
+  ["Build", "docs/BUILD.md", "Reproducible toolchain: JDK 17, NDK 27.1, CMake 3.31.6, SDK 36"],
+  ["Optimizations", "docs/OPTIMIZATIONS.md", "Source-level explanation of every runtime decision"],
+  ["KleidiAI quants", "docs/KLEIDIAI-QUANTS.md", "Which GGUF quant actually reaches Arm's kernels"],
+  ["Benchmarks", "benchmarks/BENCHMARKS.md", "The canonical record: method, values, caveats"],
+  ["Reproducibility", "benchmarks/REPRODUCIBILITY.md", "Protocol, CSV evidence schema, audit trail"],
+  ["Comparisons", "benchmarks/COMPARISONS.md", "The bar any cross-runtime claim has to clear"],
+  ["Journey", "docs/JOURNEY.md", "Every withdrawn claim - also rendered on this site"],
+  ["Starter kit", "templates/arm64-android-runtime/README.md", "Copyable Arm64 runtime policy and affinity helper"],
+  ["Contributing", "docs/CONTRIBUTING.md", "Conventions, validation, next steps"],
+];
+
+const faq: { q: string; a: string }[] = [
+  {
+    q: "Does ENTITY need internet access?",
+    a: "No. Model loading, prompt processing, generation, chat storage and runtime metrics run locally, with no inference server or cloud API. Since v3.2.0 the app declares the INTERNET permission for one optional feature - the model catalog, which downloads a GGUF from a public host only when you tap one. Import your own model from storage instead and nothing in ENTITY ever opens a connection.",
+  },
+  {
+    q: "Which devices are supported?",
+    a: "arm64 Android phones on Android 13 or later. Seven Arm CPU backend variants ship and the strongest one the device supports is selected at runtime; there are no x86 binaries.",
+  },
+  {
+    q: "Which models can I use?",
+    a: "Pick one from the in-app catalog - sized for your phone, tagged for whether it reaches Arm's KleidiAI kernels - or import any runnable GGUF through the document picker. A 1B model is a good starting point; a 3B-class model needs more free memory and may receive a smaller Auto context window.",
+  },
+  {
+    q: "What does Auto mode change?",
+    a: "It ranks online cores by advertised max frequency for decode (2 to 6 cores, clamped), ranks cores by kernel cpu_capacity for prompt processing since v3.5.0 (usually wider, never narrower), sizes context from model size plus available memory, and enables the thermal guard.",
+  },
+  {
+    q: "Why not use every CPU core?",
+    a: "Because it is measurably slower - for both phases. Decode: 8 threads gives 8.8 tok/s where 4 gives 16.9 on the reference phone, because the efficiency cores gate the token-by-token path. Prompt eval: 135 tok/s on the 4 fast cores against 86 across all 8 - an A55 is about a third of an A78, so every GEMM waited on stragglers.",
+  },
+  {
+    q: "Is a smaller quantization always faster?",
+    a: "No - and on Arm this is the most expensive thing to get wrong. KleidiAI ships matmul kernels for Q4_0 and Q8_0 only; a Q3_K_L model is smaller on disk than Q4_0 and still leaves Arm's kernels idle: 42.7 vs 121 tok/s prompt, 12.1 s vs 4.3 s TTFT on the same phone and config. Decode moves the other way (16.9 vs 14.7) because it tracks bytes per weight. The model-info card tells you which case you are in.",
+  },
+  {
+    q: "Are power numbers trustworthy while charging?",
+    a: "No. Charging changes the battery-current reading, so ENTITY hides power and tokens per watt during charging. For comparable results: unplug, let the phone cool, run the same model and configuration.",
+  },
+  {
+    q: "So how much does core pinning actually earn?",
+    a: "Most of the gain is the thread count, not the pin - but the pin is real and device-dependent, not zero. Across twelve July runs, dropping 8 threads to 4 earned +81% to +106% decode; pinning measured ~0% then, +21% on the same phone in the later five-run export, +1%-but-lower-power on the Snapdragon 6 Gen 4, and -8.5% to +29.3% across the contributed dataset. It ships on by default because it wins on the reference device, credited as a second-order effect and exposed as a setting.",
+  },
+  {
+    q: "Does ENTITY use realtime scheduling or root-only controls?",
+    a: "No, and it cannot: cpufreq governors, scheduler policy, /proc/sys and realtime priority classes all need root. ENTITY uses the sanctioned unprivileged surface - sched_setaffinity, ggml thread pools with explicit masks, a cooperative thermal delay, and (since v3.6.0) an Android performance-hint session, shipped to be measured rather than assumed: the bench app carries an adpf arm and no claim is made for it until devices report back.",
+  },
+  {
+    q: "Can I turn core pinning off?",
+    a: "Yes, since v3.5.0: Settings > Inference > Core placement - Auto, Perf cores, or Scheduler. It is a setting rather than a default because the measurements do not support one answer; after a benchmark run, Settings reports which placement won on your phone and offers one-tap apply. The energy half of the verdict is suppressed if the run was charging.",
+  },
+  {
+    q: "Why does the app use two different thread counts?",
+    a: "Decode is memory-bandwidth-bound and saturates on a couple of cores; prompt processing is compute-bound and scales with width. Until v3.5.0 both used one number - correct on a 4+4 phone, wrong on any phone with a prime core, where prefill ended up on two threads. The contributed dataset is what exposed it.",
+  },
+  {
+    q: "Does ENTITY render LaTeX?",
+    a: "Yes, since v3.5.0. Inline and display delimiters are recognised; symbols and scripts map to Unicode where possible, and fractions and radicals draw on a Canvas with a proper rule and vinculum. Hand-rolled in Latex.kt - no dependency added - and currency is not mistaken for maths.",
+  },
+  {
+    q: "Can I reuse the Arm runtime logic in another project?",
+    a: "Yes - the Arm64 Android starter kit in the repository contains the pure-Kotlin runtime policy, a portable C++ affinity helper and a retargeting checklist. A starting point, not a substitute for measuring on the target phone.",
+  },
+];
+---
+
+<Layout
+  title="Docs - ENTITY"
+  description="Documentation hub: architecture, build, reproducibility and contribution guides, the FAQ, and the full changelog for ENTITY chat (26 releases) and ENTITY Bench (9 releases)."
+  path="/docs/"
+>
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pt-12 pb-8">
+    <p class="microlabel">Documentation</p>
+    <h1 class="mt-3 text-2xl md:text-3xl font-bold">Docs, FAQ, changelog</h1>
+    <p class="mt-3 max-w-[68ch] text-dim text-[0.875rem]">
+      The deep documentation lives in the source repository beside the code it describes. This
+      page is the map, the FAQ in full, and the release history of both apps.
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pb-10">
+    <h2 class="text-xl font-bold">In the repository</h2>
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      {
+        links.map(([name, path, desc]) => (
+          <a href={`${REPO}/blob/main/${path}`} class="card p-4 no-underline hover:border-dim transition-colors duration-150">
+            <p class="text-[0.8125rem] font-bold">{name}</p>
+            <p class="mt-1 text-[0.75rem] text-dim leading-relaxed">{desc}</p>
+            <p class="mt-2 text-[0.625rem] text-dim">{path}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8">
+    <h2 class="text-xl font-bold">How it is put together</h2>
+    <div class="mt-4 card p-6 text-[0.8125rem] leading-relaxed max-w-[80ch]">
+      <p>
+        Kotlin UI &rarr; <code>com.arm.aichat</code> inference library &rarr; JNI &rarr;
+        llama.cpp. <code>AiChat.getInferenceEngine()</code> returns one process-wide engine that
+        chat and benchmark share, and every native call runs on a single-threaded dispatcher -
+        llama.cpp's context is not thread-safe across calls, so serialization is structural, not
+        defensive. The native layer (<code>ai_chat.cpp</code>) owns the model, context, sampler,
+        the two persistent thread pools (decode and prefill), affinity, and the graceful
+        context-shift path that trims the oldest turns instead of hard-stopping. Chat history
+        persists in SQLite; restoring a conversation re-primes the native KV through the same
+        chat-template path as live turns.
+      </p>
+      <p class="mt-3 text-dim">
+        Full component map and token flow: <a href={`${REPO}/blob/main/docs/ARCHITECTURE.md`}>ARCHITECTURE.md</a>.
+      </p>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8">
+    <h2 class="text-xl font-bold">FAQ</h2>
+    <div class="mt-4 max-w-[80ch] space-y-2">
+      {
+        faq.map((f) => (
+          <details class="card group">
+            <summary class="cursor-pointer list-none px-5 py-3.5 text-[0.875rem] font-medium flex items-center justify-between gap-4">
+              {f.q}
+              <span class="text-dim group-open:rotate-90 transition-transform duration-150" aria-hidden="true">&gt;</span>
+            </summary>
+            <p class="px-5 pb-4 text-[0.8125rem] text-dim leading-relaxed">{f.a}</p>
+          </details>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8">
+    <h2 class="text-xl font-bold">Changelog</h2>
+    <p class="mt-2 text-[0.8125rem] text-dim">
+      Rendered from <code>releases/</code> in the source repository. Full notes per version live
+      there.
+    </p>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <p class="microlabel">ENTITY chat &middot; {changelog.chat.length} releases</p>
+        <ul class="mt-2 divide-y divide-outline card px-5">
+          {
+            changelog.chat.map((r) => (
+              <li class="py-2.5 grid grid-cols-[4.5rem_1fr_auto] gap-3 text-[0.8125rem] items-baseline">
+                <span class="font-bold">v{r.version}</span>
+                <span class="text-dim min-w-0">{r.title}</span>
+                <span class="text-[0.6875rem] text-dim whitespace-nowrap">{r.date ?? ""}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div>
+        <p class="microlabel">ENTITY Bench &middot; {changelog.bench.length} releases</p>
+        <ul class="mt-2 divide-y divide-outline card px-5">
+          {
+            changelog.bench.map((r) => (
+              <li class="py-2.5 grid grid-cols-[4.5rem_1fr_auto] gap-3 text-[0.8125rem] items-baseline">
+                <span class="font-bold">v{r.version}</span>
+                <span class="text-dim min-w-0">{r.title || "release notes"}</span>
+                <span class="text-[0.6875rem] text-dim whitespace-nowrap">{r.date ?? ""}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  </section>
+</Layout>

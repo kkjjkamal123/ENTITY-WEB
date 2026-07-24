@@ -1,0 +1,54 @@
+{
+  "contributed_multidevice.png": {
+    "w": 1600,
+    "h": 640
+  },
+  "cpu_frequency.png": {
+    "w": 1600,
+    "h": 492
+  },
+  "cpu_utilization.png": {
+    "w": 1600,
+    "h": 853
+  },
+  "decode_attribution.png": {
+    "w": 1600,
+    "h": 873
+  },
+  "energy_efficiency.png": {
+    "w": 1600,
+    "h": 942
+  },
+  "energy_per_task.png": {
+    "w": 1600,
+    "h": 714
+  },
+  "four_arm_decode_20260718.png": {
+    "w": 1600,
+    "h": 735
+  },
+  "kleidiai_prompt_ttft.png": {
+    "w": 1600,
+    "h": 814
+  },
+  "memory_usage.png": {
+    "w": 1600,
+    "h": 853
+  },
+  "power_consumption.png": {
+    "w": 1600,
+    "h": 853
+  },
+  "summary_comparison.png": {
+    "w": 1600,
+    "h": 640
+  },
+  "thermal_analysis.png": {
+    "w": 1600,
+    "h": 853
+  },
+  "three_app_comparison.png": {
+    "w": 2070,
+    "h": 1007
+  }
+}

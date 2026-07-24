@@ -1,0 +1,194 @@
+---
+/*
+  A4 - The KleidiAI quantization gate.
+  Arm's KleidiAI registers matmul kernels for exactly two GGML types, Q4_0 and
+  Q8_0 (ggml/src/ggml-cpu/kleidiai/kleidiai.cpp). Every other quantization
+  misses them - silently, until llama.cpp PR #25701 (merged 2026-07-21) added
+  the one-time warning. The fallback is not "generic scalar code": K-quants
+  still reach ggml's Arm repack kernels (JOURNEY.md section 3); the cost shows
+  up where the compute-bound GEMM lives - prompt processing and TTFT.
+*/
+import Fig from "../Fig.astro";
+import CaveatCard from "../CaveatCard.astro";
+
+const quants = [
+  { q: "Q4_0", fast: true },
+  { q: "Q8_0", fast: true },
+  { q: "Q3_K_L", fast: false },
+  { q: "Q4_K_M", fast: false },
+  { q: "Q5_K_M", fast: false },
+  { q: "Q6_K", fast: false },
+  { q: "F16", fast: false },
+];
+---
+
+<Fig
+  id="a4"
+  title="A4 - The KleidiAI quantization gate"
+  shows="A GGUF's header names its quantization; that one field decides whether Arm's KleidiAI kernels run at all. Q4_0 and Q8_0 route to them - everything else drops to ggml's other CPU paths, and until PR #25701 nothing told you."
+  data="measured"
+  dataNote="Kernel gate verified in ggml/src/ggml-cpu/kleidiai/kleidiai.cpp. Cost table: CMF Phone 1, same 512-token prompt, same 4-thread unpinned config, only the quantization differs - docs/KLEIDIAI-QUANTS.md."
+  controls={false}
+>
+  <div id="a4-root">
+    <div role="group" aria-label="Pick a quantization" class="flex flex-wrap gap-1.5">
+      {
+        quants.map((x, i) => (
+          <button
+            type="button"
+            class="a4-q chip cursor-pointer"
+            data-fast={x.fast ? "1" : "0"}
+            data-on={i === 0 || undefined}
+            aria-pressed={i === 0 ? "true" : "false"}
+          >
+            {x.q}
+          </button>
+        ))
+      }
+    </div>
+
+    <div class="mt-5 grid grid-cols-[auto_auto_1fr] items-center gap-x-3 md:gap-x-5 text-[0.75rem]">
+      <div class="a4-node card px-3 py-2">
+        <span class="microlabel !text-[0.5625rem]">gguf</span>
+        <p id="a4-file" class="font-medium">model-Q4_0.gguf</p>
+      </div>
+      <div class="a4-node card px-3 py-2">
+        <span class="microlabel !text-[0.5625rem]">header read</span>
+        <p class="font-medium">general.file_type</p>
+      </div>
+      <div class="grid gap-3">
+        <div
+          id="a4-path-fast"
+          class="a4-path rounded-[8px] border px-3 py-2 transition-colors duration-300"
+          data-active
+        >
+          <p class="font-bold">KleidiAI kernels <span class="chip !text-[0.5625rem] !px-1.5 ml-1" data-on>Q4_0 &middot; Q8_0 only</span></p>
+          <p class="text-dim text-[0.6875rem] mt-0.5">
+            Arm-written matmul micro-kernels for the compute-bound prompt GEMM.
+          </p>
+        </div>
+        <div
+          id="a4-path-slow"
+          class="a4-path rounded-[8px] border px-3 py-2 transition-colors duration-300"
+        >
+          <p class="font-bold">ggml CPU path - no KleidiAI</p>
+          <p class="text-dim text-[0.6875rem] mt-0.5">
+            Not bare scalar code: K-quants still reach ggml's Arm dotprod repack kernels. What
+            they miss is KleidiAI - and nothing said so until the upstream warning landed.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <p id="a4-verdict" class="mt-4 text-[0.8125rem]">
+      <span class="font-bold">Q4_0 reaches Arm's fast path.</span>
+      <span class="text-dim"> The app's model card reports this state as "KLEIDIAI ACTIVE".</span>
+    </p>
+
+    <div class="scroll-x mt-4">
+      <table class="data-table min-w-[520px]">
+        <caption class="sr-only">
+          Measured cost of missing the fast path: Q3_K_L vs Q4_0, same phone and config
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col"><span class="sr-only">Metric</span></th>
+            <th scope="col" class="num">Q3_K_L (733 MB, no fast path)</th>
+            <th scope="col" class="num">Q4_0 (773 MB, fast path)</th>
+            <th scope="col" class="num">change</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Prompt throughput</td>
+            <td class="num">42.7 tok/s</td>
+            <td class="num font-bold">121 tok/s</td>
+            <td class="num t-ok">+183%</td>
+          </tr>
+          <tr>
+            <td>Derived TTFT (512-token prompt)</td>
+            <td class="num">12,050 ms</td>
+            <td class="num font-bold">4,299 ms</td>
+            <td class="num t-ok">-64%</td>
+          </tr>
+          <tr>
+            <td>Decode throughput</td>
+            <td class="num">16.9 tok/s</td>
+            <td class="num">14.7 tok/s</td>
+            <td class="num t-danger">-13%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p slot="caption">
+    The fallback used to be silent - no log line, nothing in logcat. This project contributed the
+    one-time warning upstream:
+    <a href="https://github.com/ggml-org/llama.cpp/pull/25701">llama.cpp PR #25701</a>, merged
+    2026-07-21 as commit <code>fb0e6b6</code>.
+  </p>
+</Fig>
+
+<div class="mt-4">
+  <CaveatCard title="What this measures, and what it does not attribute">
+    <p>
+      The table isolates the <strong>quantization</strong>, not KleidiAI specifically: moving to
+      Q4_0 switches on both KleidiAI's kernels and ggml's Arm repack path at once, and the split
+      between them has not been measured on this phone. Independent measurements suggest the
+      KleidiAI flag adds little at Q4_0; its clear win is at Q8_0 (docs/KLEIDIAI-QUANTS.md).
+    </p>
+    <p>
+      Decode does not improve because it is memory-bandwidth-bound and tracks bytes per weight,
+      not kernel quality - Q4_0 is about 6% more bytes than Q3_K_L and lands slightly slower.
+      Q4_0 is also a quality tradeoff, which is why ENTITY recommends rather than switches: the
+      model card reports which case you are in.
+    </p>
+  </CaveatCard>
+</div>
+
+<style>
+  .a4-path {
+    border-color: var(--outline);
+    border-style: dashed;
+  }
+  .a4-path > p:first-child {
+    color: var(--dim);
+  }
+  .a4-path[data-active] {
+    border-style: solid;
+    border-color: var(--fill);
+    background: var(--surface);
+  }
+  .a4-path[data-active] > p:first-child {
+    color: var(--fg);
+  }
+</style>
+
+<script>
+  const root = document.getElementById("a4-root");
+  if (root) {
+    const btns = [...root.querySelectorAll<HTMLButtonElement>(".a4-q")];
+    const fast = document.getElementById("a4-path-fast")!;
+    const slow = document.getElementById("a4-path-slow")!;
+    const file = document.getElementById("a4-file")!;
+    const verdict = document.getElementById("a4-verdict")!;
+    btns.forEach((b) =>
+      b.addEventListener("click", () => {
+        btns.forEach((x) => {
+          const on = x === b;
+          x.toggleAttribute("data-on", on);
+          x.setAttribute("aria-pressed", String(on));
+        });
+        const q = b.textContent!.trim();
+        const isFast = b.dataset.fast === "1";
+        file.textContent = `model-${q}.gguf`;
+        fast.toggleAttribute("data-active", isFast);
+        slow.toggleAttribute("data-active", !isFast);
+        verdict.innerHTML = isFast
+          ? `<span class="font-bold">${q} reaches Arm's fast path.</span> <span class="text-dim">The app's model card reports this state as "KLEIDIAI ACTIVE".</span>`
+          : `<span class="font-bold">${q} misses KleidiAI</span> <span class="text-dim">- it runs on ggml's Arm repack kernels instead, and the model card says so before you pay the TTFT.</span>`;
+      })
+    );
+  }
+</script>

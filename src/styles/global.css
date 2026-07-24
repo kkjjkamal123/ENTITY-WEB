@@ -1,0 +1,361 @@
+@import "tailwindcss";
+
+/*
+  ENTITY design tokens.
+  Colour values are the shipped app's own palette (ENTITY v3.4.0), which
+  deliberately retired pure #000/#FFF: 21:1 contrast on a black field causes
+  halation. Do not "improve" them back.
+  Status hues validated with the dataviz palette validator against both
+  surfaces (see DESIGN-NOTES.md). Hue appears only for status and consequence;
+  chrome stays monochrome.
+*/
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+
+:root {
+  /* dark (default) */
+  --bg: #121212;
+  --surface: #1e1e1e;
+  --fg: #e4e4e4;
+  --dim: #a0a0a0;
+  --outline: #333333;
+  --fill: #d6d6d6;
+  --on-fill: #121212;
+
+  /* status: marks/badges (>=3:1 on surface) */
+  --ok: #358756;
+  --warn: #bd8830;
+  --danger: #c1425a;
+  /* status: text (>=4.5:1 on bg and surface) */
+  --ok-ink: #6fbf8e;
+  --warn-ink: #d8a34c;
+  --danger-ink: #e58894;
+  /* soft status washes for row/panel backgrounds */
+  --ok-wash: rgba(53, 135, 86, 0.14);
+  --warn-wash: rgba(189, 136, 48, 0.14);
+  --danger-wash: rgba(193, 66, 90, 0.14);
+
+  /* ordinal arm ramp: naive -> threads-only -> auto (validated ordinal) */
+  --arm-1: #6a6a6a;
+  --arm-2: #a0a0a0;
+  --arm-3: #e4e4e4;
+  --arm-4: #4a4a4a; /* efficiency / LITTLE-pinned, recessive */
+
+  --grid: #2a2a2a; /* hairline gridlines, one step off surface */
+
+  /* motion tokens - single source, consumed by CSS and JS */
+  --dur-fast: 150ms;
+  --dur-base: 240ms;
+  --dur-slow: 400ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
+
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #f1f0ec;
+    --surface: #f9f8f5;
+    --fg: #1f1f1d;
+    --dim: #5c5c58;
+    --outline: #d6d4ce;
+    --fill: #1f1f1d;
+    --on-fill: #f9f8f5;
+    --ok: #17693f;
+    --warn: #ad7800;
+    --danger: #a61e3c;
+    --ok-ink: #17693f;
+    --warn-ink: #7e5800;
+    --danger-ink: #a61e3c;
+    --ok-wash: rgba(23, 105, 63, 0.1);
+    --warn-wash: rgba(173, 120, 0, 0.1);
+    --danger-wash: rgba(166, 30, 60, 0.1);
+    --arm-1: #99968f;
+    --arm-2: #5c5c58;
+    --arm-3: #1f1f1d;
+    --arm-4: #b5b2ab;
+    --grid: #e5e3dd;
+    color-scheme: light;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #f1f0ec;
+  --surface: #f9f8f5;
+  --fg: #1f1f1d;
+  --dim: #5c5c58;
+  --outline: #d6d4ce;
+  --fill: #1f1f1d;
+  --on-fill: #f9f8f5;
+  --ok: #17693f;
+  --warn: #ad7800;
+  --danger: #a61e3c;
+  --ok-ink: #17693f;
+  --warn-ink: #7e5800;
+  --danger-ink: #a61e3c;
+  --ok-wash: rgba(23, 105, 63, 0.1);
+  --warn-wash: rgba(173, 120, 0, 0.1);
+  --danger-wash: rgba(166, 30, 60, 0.1);
+  --arm-1: #99968f;
+  --arm-2: #5c5c58;
+  --arm-3: #1f1f1d;
+  --arm-4: #b5b2ab;
+  --grid: #e5e3dd;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-dim: var(--dim);
+  --color-outline: var(--outline);
+  --color-fill: var(--fill);
+  --color-onfill: var(--on-fill);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-ok-ink: var(--ok-ink);
+  --color-warn-ink: var(--warn-ink);
+  --color-danger-ink: var(--danger-ink);
+  --color-grid: var(--grid);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+  --radius-card: var(--radius);
+}
+
+/* base */
+html {
+  background: var(--bg);
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  font-family: var(--font-mono);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 15px;
+  line-height: 1.7;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+@media (min-width: 768px) {
+  body {
+    font-size: 16px;
+  }
+}
+
+::selection {
+  background: var(--fill);
+  color: var(--on-fill);
+}
+
+:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@layer base {
+  [id] {
+    scroll-margin-top: 4.75rem;
+  }
+  a {
+    color: var(--fg);
+    text-decoration: underline;
+    text-decoration-color: var(--dim);
+    text-underline-offset: 3px;
+  }
+  a:hover {
+    text-decoration-color: var(--fg);
+  }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--outline);
+  }
+}
+
+/* micro-label: the app's uppercase section register (DEVICE UNDER TEST) */
+.microlabel {
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 500;
+}
+
+/* card: surface on bg, 1px outline, app radius.
+   min-width 0 so a card in a grid/flex track never propagates its content's
+   min-content width into the track (long code lines scroll inside instead). */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+/* chip: the app's solid = live / outline = not present states */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  border-radius: 999px;
+  padding: 0.15em 0.75em;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  border: 1px solid var(--outline);
+  color: var(--dim);
+  white-space: nowrap;
+}
+.chip[data-on] {
+  background: var(--fill);
+  color: var(--on-fill);
+  border-color: var(--fill);
+  font-weight: 500;
+}
+.chip[data-dashed] {
+  border-style: dashed;
+}
+
+/* buttons in the app register */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  border-radius: var(--radius);
+  border: 1px solid var(--outline);
+  padding: 0.55em 1.2em;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+.btn:hover {
+  border-color: var(--dim);
+}
+.btn-solid {
+  background: var(--fill);
+  color: var(--on-fill);
+  border-color: var(--fill);
+}
+.btn-solid:hover {
+  opacity: 0.9;
+  border-color: var(--fill);
+}
+
+/* prose measure */
+.prose-measure {
+  max-width: 68ch;
+}
+
+/* tables */
+table {
+  border-collapse: collapse;
+}
+.data-table {
+  width: 100%;
+  font-size: 0.8125rem;
+}
+.data-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--dim);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--outline);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--outline);
+  vertical-align: top;
+}
+.data-table tr:last-child td {
+  border-bottom: 0;
+}
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+th[aria-sort="descending"] button {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: var(--fg);
+}
+
+/* scroll containers: wide content scrolls inside itself, never the page */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* figure captions */
+figcaption {
+  font-size: 0.8125rem;
+  color: var(--dim);
+  line-height: 1.6;
+}
+
+/* status text helpers - colour never the only signal; pair with text/shape */
+.t-ok {
+  color: var(--ok-ink);
+}
+.t-warn {
+  color: var(--warn-ink);
+}
+.t-danger {
+  color: var(--danger-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* skip link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--fill);
+  color: var(--on-fill);
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 var(--radius-sm) 0;
+}
+.skip-link:focus {
+  left: 0;
+}

@@ -1,0 +1,181 @@
+---
+/*
+  A1 - The three-arm race.
+  The same 128-token decode, run three ways on the same phone, finishing at
+  three different times. Driven by the five-run four-arm export of 2026-07-18
+  (benchmarks/BENCHMARKS.md): naive 10.8, threads-only 15.0, Auto 18.1 tok/s.
+  Real durations for 128 tokens: 11.85 s / 8.53 s / 7.07 s. Playback is
+  compressed to ~4 s wall-clock with the ratios preserved exactly.
+  Poster frame (no JS / reduced motion): all three tracks complete with the
+  finish times labelled - a bar chart of duration.
+*/
+import Fig from "../Fig.astro";
+import CoreTopology from "../CoreTopology.astro";
+
+const TOKENS = 128;
+const little = { mhz: 2000, fast: false, capacity: 228 };
+const big = { mhz: 2500, fast: true, capacity: 1024 };
+const arms = [
+  {
+    key: "naive",
+    name: "Naive",
+    cfg: "8 threads, all cores",
+    rate: 10.8,
+    sd: 1.3,
+    tone: 1,
+    cores: [little, little, little, little, big, big, big, big],
+    coreNote: "8 threads across all 8 cores",
+  },
+  {
+    key: "threads",
+    name: "Threads only",
+    cfg: "4 threads, no pin",
+    rate: 15.0,
+    sd: 0.5,
+    tone: 2,
+    cores: [little, little, little, little, big, big, big, big],
+    coreNote: "4 threads, placement left to the scheduler",
+  },
+  {
+    key: "auto",
+    name: "ENTITY Auto",
+    cfg: "4 threads, pinned",
+    rate: 18.1,
+    sd: 0.4,
+    tone: 3,
+    emph: true,
+    cores: [big, big, big, big],
+    coreNote: "4 threads pinned to the 4 performance cores",
+  },
+].map((a) => ({ ...a, secs: TOKENS / a.rate }));
+
+const tMax = Math.max(...arms.map((a) => a.secs)); // 11.85 s
+const gridSecs = [0, 2, 4, 6, 8, 10];
+/* token tick spacing inside the fill: one hairline every 16 tokens */
+const tickPct = (rate: number, secs: number) => (16 / rate / secs) * 100;
+---
+
+<Fig
+  id="a1"
+  title="A1 - The three-arm race"
+  shows="The same 128-token decode, run three ways on the same phone. The naive 8-thread default finishes last; the derived thread count earns most of the gap, pinning the rest."
+  data="measured"
+  dataNote="CMF Phone 1 (Dimensity 7300), Llama-3.2-1B-Instruct-Q4_0, PP 512 / TG 128, unplugged, 5 runs per arm, 2026-07-18 - benchmarks/BENCHMARKS.md. Playback compressed to ~4 s; ratios exact."
+>
+  <div id="a1-root" data-tmax={tMax} class="space-y-4">
+    {
+      arms.map((a) => (
+        <div class="grid grid-cols-[minmax(6.5rem,8rem)_1fr] md:grid-cols-[12rem_1fr_11.5rem] items-center gap-x-3 gap-y-1">
+          <div class="min-w-0">
+            <p class:list={["text-[0.8125rem] leading-tight", a.emph && "font-bold"]}>{a.name}</p>
+            <p class="text-[0.6875rem] text-dim leading-tight">{a.cfg}</p>
+            <div class="mt-1.5 hidden md:block" title={a.coreNote}>
+              <CoreTopology cores={a.cores} size="sm" label={a.coreNote} />
+            </div>
+          </div>
+          <div class="relative h-6 rounded-[4px] border border-outline bg-surface overflow-hidden">
+            {gridSecs.map((s) => (
+              <span
+                class="absolute top-0 bottom-0 w-px bg-grid"
+                style={`left:${(s / tMax) * 100}%`}
+                aria-hidden="true"
+              />
+            ))}
+            <div
+              class="a1-fill absolute inset-y-0 left-0 origin-left rounded-r-[4px]"
+              data-secs={a.secs}
+              style={`width:${(a.secs / tMax) * 100}%; background-color: var(--arm-${a.tone});
+                background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc(${tickPct(a.rate, a.secs)}% - 1px), var(--bg) calc(${tickPct(a.rate, a.secs)}% - 1px), var(--bg) ${tickPct(a.rate, a.secs)}%);`}
+            />
+          </div>
+          <p class="a1-label col-start-2 md:col-start-3 text-[0.75rem] lg:whitespace-nowrap md:text-right">
+            <span class:list={["a1-secs", a.emph && "font-bold"]}>{a.secs.toFixed(2)} s</span>
+            <span class="text-dim">
+              &middot; <span class="a1-count" data-rate={a.rate} data-secs={a.secs}>128</span> tok
+              &middot; {a.rate.toFixed(1)}&plusmn;{a.sd} tok/s
+            </span>
+          </p>
+        </div>
+      ))
+    }
+    <div class="grid grid-cols-[minmax(6.5rem,8rem)_1fr] md:grid-cols-[12rem_1fr_11.5rem] gap-3" aria-hidden="true">
+      <span></span>
+      <div class="relative h-4 text-[0.625rem] text-dim">
+        {gridSecs.map((s) => (
+          <span class="absolute -translate-x-1/2" style={`left:${(s / tMax) * 100}%`}>
+            {s}s
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <p slot="caption">
+    Naive to threads-only isolates the thread count (+39% decode); threads-only to Auto isolates
+    the pinning (+21%, the two distributions do not overlap on this device). One tick inside a
+    bar = 16 tokens. The 1-run "+102%" figure the bench screen reports is deliberately not used
+    here; leaderboard rules mark single-pass results provisional.
+  </p>
+</Fig>
+
+<script>
+  import { registerFig, reducedMotion } from "../../scripts/figctl";
+
+  const root = document.getElementById("a1-root");
+  if (root && !reducedMotion()) {
+    const WALL = 4000; // wall-clock ms for the slowest arm (11.85 s real)
+    const tMax = parseFloat(root.dataset.tmax!);
+    const fills = [...root.querySelectorAll<HTMLElement>(".a1-fill")];
+    const labels = [...root.querySelectorAll<HTMLElement>(".a1-label")];
+    const counts = [...root.querySelectorAll<HTMLElement>(".a1-count")];
+    const anims: Animation[] = [];
+    let raf = 0;
+
+    fills.forEach((el) => {
+      const secs = parseFloat(el.dataset.secs!);
+      const a = el.animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], {
+        duration: (secs / tMax) * WALL,
+        easing: "linear",
+        fill: "both",
+      });
+      a.pause();
+      anims.push(a);
+    });
+
+    const tick = () => {
+      counts.forEach((c, i) => {
+        const secs = parseFloat(c.dataset.secs!);
+        const rate = parseFloat(c.dataset.rate!);
+        const dur = (secs / tMax) * WALL;
+        const mt = Math.min((anims[i].currentTime as number | null) ?? 0, dur);
+        const toks = Math.min(128, Math.round((mt / dur) * secs * rate));
+        c.textContent = String(toks);
+        labels[i].style.opacity = toks >= 128 ? "1" : "0.45";
+      });
+      if (anims.some((a) => a.playState === "running")) raf = requestAnimationFrame(tick);
+    };
+
+    registerFig(root.closest("[data-fig]") as HTMLElement, {
+      start() {
+        anims.forEach((a) => a.play());
+        raf = requestAnimationFrame(tick);
+      },
+      pause() {
+        anims.forEach((a) => a.pause());
+        cancelAnimationFrame(raf);
+      },
+      resume() {
+        anims.forEach((a) => a.play());
+        raf = requestAnimationFrame(tick);
+      },
+      replay() {
+        anims.forEach((a) => {
+          a.currentTime = 0;
+          a.play();
+        });
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(tick);
+      },
+    });
+  }
+</script>

@@ -1,0 +1,35 @@
+---
+/*
+  Embeds a generated benchmark plot (matplotlib PNG from benchmarks/plots/)
+  with explicit dimensions and a caption. These are evidence artifacts and are
+  shown as generated - they do not follow the site theme.
+*/
+import manifest from "../../public/plots/manifest.json";
+import { withBase } from "../lib/url";
+
+interface Props {
+  file: keyof typeof manifest;
+  alt: string;
+  regen?: string;
+}
+const { file, alt, regen } = Astro.props;
+const { w, h } = manifest[file];
+---
+
+<figure class="card p-3">
+  <div class="rounded-[6px] overflow-hidden bg-white">
+    <img
+      src={withBase(`/plots/${file}`)}
+      alt={alt}
+      width={w}
+      height={h}
+      loading="lazy"
+      decoding="async"
+      class="block w-full h-auto"
+    />
+  </div>
+  <figcaption class="mt-2 px-1">
+    <slot />
+    {regen && <span class="block mt-1 text-[0.625rem]">regenerate: <code>{regen}</code></span>}
+  </figcaption>
+</figure>

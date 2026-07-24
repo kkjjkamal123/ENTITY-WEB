@@ -1,0 +1,32 @@
+---
+/*
+  App screenshot as <picture> with AVIF/WebP/PNG, explicit dimensions,
+  lazy below the fold. Slugs and sizes come from public/shots/manifest.json.
+*/
+import manifest from "../../public/shots/manifest.json";
+import { withBase } from "../lib/url";
+
+interface Props {
+  slug: keyof typeof manifest;
+  alt: string;
+  eager?: boolean;
+  class?: string;
+}
+const { slug, alt, eager = false, class: cls } = Astro.props;
+const { w, h } = manifest[slug];
+const src = (ext: string) => withBase(`/shots/${slug}.${ext}`);
+---
+
+<picture>
+  <source srcset={src("avif")} type="image/avif" />
+  <source srcset={src("webp")} type="image/webp" />
+  <img
+    src={src("png")}
+    alt={alt}
+    width={w}
+    height={h}
+    loading={eager ? "eager" : "lazy"}
+    decoding="async"
+    class:list={["block w-full h-auto", cls]}
+  />
+</picture>

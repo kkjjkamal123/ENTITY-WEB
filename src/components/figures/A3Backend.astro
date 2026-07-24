@@ -1,0 +1,282 @@
+---
+/*
+  A3 - Backend selection at startup.
+  Seven Arm CPU backend variants ship in the APK (stock llama.cpp
+  GGML_CPU_ALL_VARIANTS=ON, ggml/src/CMakeLists.txt); ggml scores them against
+  the silicon at startup and loads the best supported one. The device selector
+  is driven by real cpu_flags from the contributed dataset, so a different
+  device lights different flags and loads a different variant.
+  Eligibility here is judged from each device's reported cpu_flags; ggml's own
+  startup scoring makes the final call on the phone.
+*/
+import Fig from "../Fig.astro";
+
+const FLAGS = ["dotprod", "fp16", "i8mm", "sve", "sve2", "sme"];
+
+const variants = [
+  { name: "android_armv8.0_1", req: [] as string[] },
+  { name: "android_armv8.2_1", req: ["dotprod"] },
+  { name: "android_armv8.2_2", req: ["dotprod", "fp16"] },
+  { name: "android_armv8.6_1", req: ["dotprod", "fp16", "i8mm"] },
+  { name: "android_armv9.0_1", req: ["dotprod", "i8mm", "fp16", "sve2"] },
+  { name: "android_armv9.2_1", req: ["dotprod", "i8mm", "fp16", "sve", "sme"] },
+  { name: "android_armv9.2_2", req: ["dotprod", "i8mm", "fp16", "sve", "sve2", "sme"] },
+];
+
+const devices = [
+  {
+    key: "cmf",
+    name: "CMF Phone 1",
+    soc: "Dimensity 7300",
+    flags: ["dotprod", "fp16"],
+  },
+  {
+    key: "s23",
+    name: "Galaxy S23",
+    soc: "Snapdragon 8 Gen 2",
+    flags: ["dotprod", "i8mm", "fp16"],
+  },
+  {
+    key: "pixel10",
+    name: "Pixel 10",
+    soc: "Tensor G5",
+    flags: ["dotprod", "i8mm", "sve", "sve2", "fp16"],
+  },
+  {
+    key: "spark",
+    name: "Tecno Spark 10",
+    soc: "Helio G37 (armv8.0, no dotprod)",
+    flags: [] as string[],
+  },
+];
+
+const loadedFor = (flags: string[]) => {
+  let best = 0;
+  variants.forEach((v, i) => {
+    if (v.req.every((r) => flags.includes(r))) best = i;
+  });
+  return best;
+};
+---
+
+<Fig
+  id="a3"
+  title="A3 - Backend selection at startup"
+  shows="Seven Arm CPU backend variants ship in every APK. At startup the CPU's feature flags are read, variants whose requirements the silicon cannot meet drop out, and the best survivor loads."
+  data="measured"
+  dataNote="Variant list: llama.cpp ggml/src/CMakeLists.txt (GGML_CPU_ALL_VARIANTS, Android). Device flags: real cpu_flags rows from the contributed dataset. Eligibility shown from reported flags; ggml's startup scoring decides on-device."
+>
+  <div id="a3-root" data-loaded={loadedFor(devices[0].flags)}>
+    <div role="group" aria-label="Device" class="flex flex-wrap gap-1.5">
+      {
+        devices.map((d, i) => (
+          <button
+            type="button"
+            class="a3-dev chip cursor-pointer"
+            data-key={d.key}
+            data-flags={d.flags.join(",")}
+            data-on={i === 0 || undefined}
+            aria-pressed={i === 0 ? "true" : "false"}
+            title={d.soc}
+          >
+            {d.name}
+          </button>
+        ))
+      }
+    </div>
+    <p id="a3-soc" class="mt-2 text-[0.75rem] text-dim">{devices[0].name} &middot; {devices[0].soc}</p>
+
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] gap-6">
+      <div>
+        <p class="microlabel">/proc/cpuinfo features</p>
+        <ul class="mt-2 flex flex-wrap md:flex-col gap-1.5" role="list">
+          {
+            FLAGS.map((f) => (
+              <li>
+                <span
+                  class="a3-flag chip !text-[0.6875rem]"
+                  data-flag={f}
+                  data-on={devices[0].flags.includes(f) || undefined}
+                  data-dashed={!devices[0].flags.includes(f) || undefined}
+                >
+                  {f}
+                  <span class="a3-flag-state text-[0.5625rem]">
+                    {devices[0].flags.includes(f) ? "present" : "absent"}
+                  </span>
+                </span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div>
+        <p class="microlabel">Shipped variants (best supported loads)</p>
+        <ol class="mt-2 space-y-1.5" role="list">
+          {
+            variants.map((v, i) => {
+              const loaded = i === loadedFor(devices[0].flags);
+              const eligible = v.req.every((r) => devices[0].flags.includes(r));
+              return (
+                <li
+                  class="a3-variant flex items-center gap-2 rounded-[8px] border px-3 py-1.5 text-[0.75rem] transition-opacity duration-300"
+                  data-req={v.req.join(",")}
+                  data-state={loaded ? "loaded" : eligible ? "eligible" : "out"}
+                >
+                  <span class="a3-vname font-medium shrink-0">{v.name}</span>
+                  <span class="text-dim text-[0.625rem] truncate min-w-0">
+                    {v.req.length ? v.req.join(" + ") : "baseline arm64"}
+                  </span>
+                  <span class="a3-vstate ml-auto chip !text-[0.5625rem] !px-1.5">
+                    {loaded ? "loaded" : eligible ? "supported" : "not supported"}
+                  </span>
+                </li>
+              );
+            })
+          }
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <p slot="caption">
+    Old phones without dotprod get the armv8.0 fallback instead of a crash - the Tecno Spark 10
+    row in the dataset is exactly that case. No device in the dataset reports SME yet, so the two
+    armv9.2 variants have never been the loaded one. Each variant also carries Arm KleidiAI
+    micro-kernels; whether they run is gated by the model's quantization (see A4).
+  </p>
+</Fig>
+
+<style>
+  .a3-variant[data-state="out"] {
+    border-style: dashed;
+    border-color: var(--outline);
+  }
+  .a3-variant[data-state="out"] .a3-vname {
+    color: var(--dim);
+    font-weight: 400;
+  }
+  .a3-variant[data-state="eligible"] {
+    border-color: var(--outline);
+  }
+  .a3-variant[data-state="loaded"] {
+    border-color: var(--fill);
+    background: var(--surface);
+  }
+  .a3-variant[data-state="loaded"] .a3-vstate {
+    background: var(--fill);
+    color: var(--on-fill);
+    border-color: var(--fill);
+  }
+</style>
+
+<script>
+  import { registerFig, reducedMotion } from "../../scripts/figctl";
+
+  const root = document.getElementById("a3-root");
+  if (root) {
+    const prm = reducedMotion();
+    const devBtns = [...root.querySelectorAll<HTMLButtonElement>(".a3-dev")];
+    const flagEls = [...root.querySelectorAll<HTMLElement>(".a3-flag")];
+    const variantEls = [...root.querySelectorAll<HTMLElement>(".a3-variant")];
+    const socEl = document.getElementById("a3-soc")!;
+    let flags = devBtns[0].dataset.flags!.split(",").filter(Boolean);
+    let timers: number[] = [];
+    let started = false;
+
+    const setFlag = (el: HTMLElement, on: boolean) => {
+      el.toggleAttribute("data-on", on);
+      el.toggleAttribute("data-dashed", !on);
+      el.querySelector(".a3-flag-state")!.textContent = on ? "present" : "absent";
+    };
+
+    const applyFinal = () => {
+      let best = 0;
+      variantEls.forEach((el, i) => {
+        const req = (el.dataset.req ?? "").split(",").filter(Boolean);
+        const ok = req.every((r) => flags.includes(r));
+        el.dataset.state = ok ? "eligible" : "out";
+        el.querySelector(".a3-vstate")!.textContent = ok ? "supported" : "not supported";
+        if (ok) best = i;
+      });
+      variantEls[best].dataset.state = "loaded";
+      variantEls[best].querySelector(".a3-vstate")!.textContent = "loaded";
+      flagEls.forEach((el) => setFlag(el, flags.includes(el.dataset.flag!)));
+    };
+
+    const clearTimers = () => {
+      timers.forEach((t) => clearTimeout(t));
+      timers = [];
+    };
+
+    const sequence = () => {
+      clearTimers();
+      // 1. scan: flags resolve one by one; 2. variants drop out; 3. best loads
+      flagEls.forEach((el) => {
+        el.toggleAttribute("data-on", false);
+        el.toggleAttribute("data-dashed", true);
+        el.querySelector(".a3-flag-state")!.textContent = "...";
+      });
+      variantEls.forEach((el) => {
+        el.dataset.state = "eligible";
+        el.querySelector(".a3-vstate")!.textContent = "";
+      });
+      flagEls.forEach((el, i) => {
+        timers.push(
+          window.setTimeout(() => setFlag(el, flags.includes(el.dataset.flag!)), 200 + i * 180)
+        );
+      });
+      const t0 = 200 + flagEls.length * 180 + 250;
+      let best = 0;
+      variantEls.forEach((el, i) => {
+        const req = (el.dataset.req ?? "").split(",").filter(Boolean);
+        if (req.every((r) => flags.includes(r))) best = i;
+      });
+      variantEls.forEach((el, i) => {
+        timers.push(
+          window.setTimeout(() => {
+            const req = (el.dataset.req ?? "").split(",").filter(Boolean);
+            const ok = req.every((r) => flags.includes(r));
+            el.dataset.state = ok ? "eligible" : "out";
+            el.querySelector(".a3-vstate")!.textContent = ok ? "supported" : "not supported";
+          }, t0 + i * 160)
+        );
+      });
+      timers.push(
+        window.setTimeout(() => {
+          variantEls[best].dataset.state = "loaded";
+          variantEls[best].querySelector(".a3-vstate")!.textContent = "loaded";
+        }, t0 + variantEls.length * 160 + 200)
+      );
+    };
+
+    devBtns.forEach((b) =>
+      b.addEventListener("click", () => {
+        devBtns.forEach((x) => {
+          const on = x === b;
+          x.toggleAttribute("data-on", on);
+          x.setAttribute("aria-pressed", String(on));
+        });
+        flags = b.dataset.flags!.split(",").filter(Boolean);
+        socEl.textContent = `${b.textContent!.trim()} - ${b.title}`;
+        if (prm || !started) applyFinal();
+        else sequence();
+      })
+    );
+
+    if (!prm) {
+      registerFig(root.closest("[data-fig]") as HTMLElement, {
+        start() {
+          started = true;
+          sequence();
+        },
+        pause() {
+          /* timers are short; let the current step settle */
+        },
+        resume() {},
+        replay() {
+          sequence();
+        },
+      });
+    }
+  }
+</script>

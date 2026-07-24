@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kkjjkamal123.github.io/ENTITY/sitemap-index.xml

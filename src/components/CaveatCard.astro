@@ -1,0 +1,17 @@
+---
+/*
+  A boundary / limit statement. Deliberate, not apologetic: this site shows
+  limits often. Distinct style: dashed outline, BOUNDARY microlabel.
+*/
+interface Props {
+  title?: string;
+}
+const { title = "Boundary" } = Astro.props;
+---
+
+<aside class="rounded-[10px] border border-dashed border-dim/50 bg-surface/50 px-4 py-3">
+  <p class="microlabel">{title}</p>
+  <div class="mt-1.5 text-[0.8125rem] leading-relaxed text-fg/90 space-y-2">
+    <slot />
+  </div>
+</aside>

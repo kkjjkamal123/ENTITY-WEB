@@ -1,0 +1,21 @@
+---
+/*
+  Thin neutral bezel for app screenshots. Never a glossy 3D mockup.
+  Wrap a <Shot /> (or any <img>) in it.
+*/
+interface Props {
+  class?: string;
+}
+const { class: cls } = Astro.props;
+---
+
+<div
+  class:list={[
+    "rounded-[22px] border border-outline bg-surface p-1.5 shadow-none",
+    cls,
+  ]}
+>
+  <div class="rounded-[16px] overflow-hidden border border-outline/60">
+    <slot />
+  </div>
+</div>
