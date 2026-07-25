@@ -1,0 +1,115 @@
+---
+/*
+  Screenshot slideshow. Scroll-snap first: every slide is reachable by
+  swipe/scroll with zero JS - nothing is hidden in CSS. JS layers on arrows,
+  dots, keyboard and active-dot tracking, and only then are the controls shown.
+  Slides come in through the default slot, each wrapped in .carousel__slide.
+*/
+interface Props {
+  label: string;
+  id: string;
+}
+const { label, id } = Astro.props;
+---
+
+<section class="carousel" data-carousel aria-roledescription="carousel" aria-label={label}>
+  <div id={id} class="carousel__viewport" data-carousel-track tabindex="0">
+    <slot />
+  </div>
+
+  <div class="carousel__controls mt-5" data-carousel-controls hidden>
+    <div class="hidden md:block" aria-hidden="true"></div>
+    <div class="flex items-center gap-4 justify-center md:justify-start">
+      <button
+        type="button"
+        class="carousel__arrow"
+        data-carousel-prev
+        aria-label="Previous screenshot"
+        aria-controls={id}
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"
+          ><path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg
+        >
+      </button>
+      <div class="carousel__dots" data-carousel-dots></div>
+      <button
+        type="button"
+        class="carousel__arrow"
+        data-carousel-next
+        aria-label="Next screenshot"
+        aria-controls={id}
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"
+          ><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg
+        >
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  const rm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const behavior: ScrollBehavior = rm ? "auto" : "smooth";
+
+  document.querySelectorAll<HTMLElement>("[data-carousel]").forEach((car) => {
+    const track = car.querySelector<HTMLElement>("[data-carousel-track]");
+    const controls = car.querySelector<HTMLElement>("[data-carousel-controls]");
+    const dotsWrap = car.querySelector<HTMLElement>("[data-carousel-dots]");
+    if (!track || !controls || !dotsWrap) return;
+    const slides = [...track.children] as HTMLElement[];
+    if (slides.length < 2) return;
+
+    controls.hidden = false;
+
+    const centerOn = (el: HTMLElement) =>
+      track.scrollTo({
+        left: el.offsetLeft - (track.clientWidth - el.clientWidth) / 2,
+        behavior,
+      });
+
+    slides.forEach((s, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("aria-label", `Go to screenshot ${i + 1}`);
+      b.addEventListener("click", () => centerOn(s));
+      dotsWrap.append(b);
+    });
+    const dots = [...dotsWrap.children] as HTMLElement[];
+
+    const step = (dir: number) => {
+      const w = slides[0].getBoundingClientRect().width + 16;
+      track.scrollBy({ left: dir * w, behavior });
+    };
+    car
+      .querySelector<HTMLButtonElement>("[data-carousel-prev]")
+      ?.addEventListener("click", () => step(-1));
+    car
+      .querySelector<HTMLButtonElement>("[data-carousel-next]")
+      ?.addEventListener("click", () => step(1));
+
+    track.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        step(-1);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        step(1);
+      }
+    });
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const i = slides.indexOf(e.target as HTMLElement);
+          dots.forEach((d, j) =>
+            d.setAttribute("aria-current", j === i ? "true" : "false")
+          );
+        }
+      },
+      { root: track, threshold: 0.6 }
+    );
+    slides.forEach((s) => io.observe(s));
+    dots[0]?.setAttribute("aria-current", "true");
+  });
+</script>

@@ -100,7 +100,7 @@ const loadedFor = (flags: string[]) => {
                   data-dashed={!devices[0].flags.includes(f) || undefined}
                 >
                   {f}
-                  <span class="a3-flag-state text-[0.5625rem]">
+                  <span class="a3-flag-state text-[0.6875rem]">
                     {devices[0].flags.includes(f) ? "present" : "absent"}
                   </span>
                 </span>
@@ -123,10 +123,10 @@ const loadedFor = (flags: string[]) => {
                   data-state={loaded ? "loaded" : eligible ? "eligible" : "out"}
                 >
                   <span class="a3-vname font-medium shrink-0">{v.name}</span>
-                  <span class="text-dim text-[0.625rem] truncate min-w-0">
+                  <span class="text-dim text-[0.6875rem] truncate min-w-0">
                     {v.req.length ? v.req.join(" + ") : "baseline arm64"}
                   </span>
-                  <span class="a3-vstate ml-auto chip !text-[0.5625rem] !px-1.5">
+                  <span class="a3-vstate ml-auto chip !text-[0.6875rem] !px-1.5">
                     {loaded ? "loaded" : eligible ? "supported" : "not supported"}
                   </span>
                 </li>

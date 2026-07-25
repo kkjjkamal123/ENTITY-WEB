@@ -65,7 +65,7 @@ const tickPct = (rate: number, secs: number) => (16 / rate / secs) * 100;
   <div id="a1-root" data-tmax={tMax} class="space-y-4">
     {
       arms.map((a) => (
-        <div class="grid grid-cols-[minmax(6.5rem,8rem)_1fr] md:grid-cols-[12rem_1fr_11.5rem] items-center gap-x-3 gap-y-1">
+        <div class="grid grid-cols-[minmax(6.5rem,8rem)_1fr] md:grid-cols-[10.5rem_1fr_14.5rem] items-center gap-x-3 gap-y-1">
           <div class="min-w-0">
             <p class:list={["text-[0.8125rem] leading-tight", a.emph && "font-bold"]}>{a.name}</p>
             <p class="text-[0.6875rem] text-dim leading-tight">{a.cfg}</p>
@@ -88,7 +88,7 @@ const tickPct = (rate: number, secs: number) => (16 / rate / secs) * 100;
                 background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc(${tickPct(a.rate, a.secs)}% - 1px), var(--bg) calc(${tickPct(a.rate, a.secs)}% - 1px), var(--bg) ${tickPct(a.rate, a.secs)}%);`}
             />
           </div>
-          <p class="a1-label col-start-2 md:col-start-3 text-[0.75rem] lg:whitespace-nowrap md:text-right">
+          <p class="a1-label col-start-2 md:col-start-3 text-[0.6875rem] leading-tight md:text-right min-w-0">
             <span class:list={["a1-secs", a.emph && "font-bold"]}>{a.secs.toFixed(2)} s</span>
             <span class="text-dim">
               &middot; <span class="a1-count" data-rate={a.rate} data-secs={a.secs}>128</span> tok
@@ -98,9 +98,9 @@ const tickPct = (rate: number, secs: number) => (16 / rate / secs) * 100;
         </div>
       ))
     }
-    <div class="grid grid-cols-[minmax(6.5rem,8rem)_1fr] md:grid-cols-[12rem_1fr_11.5rem] gap-3" aria-hidden="true">
+    <div class="grid grid-cols-[minmax(6.5rem,8rem)_1fr] md:grid-cols-[10.5rem_1fr_14.5rem] gap-3" aria-hidden="true">
       <span></span>
-      <div class="relative h-4 text-[0.625rem] text-dim">
+      <div class="relative h-4 text-[0.6875rem] text-dim">
         {gridSecs.map((s) => (
           <span class="absolute -translate-x-1/2" style={`left:${(s / tMax) * 100}%`}>
             {s}s

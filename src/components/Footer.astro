@@ -4,32 +4,42 @@ const repo = "https://github.com/kkjjkamal123/ENTITY---Arm-Create-AI-Optimizatio
 ---
 
 <footer class="mt-20 border-t border-outline">
-  <div class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 grid grid-cols-1 gap-8 md:grid-cols-3 text-[0.8125rem]">
-    <div>
-      <p class="font-bold tracking-[0.3em]">ENTITY</p>
-      <p class="mt-2 text-dim">
+  <div class="mx-auto max-w-[1200px] px-4 md:px-6 py-12 grid grid-cols-2 gap-8 md:grid-cols-4 text-[0.8125rem]">
+    <div class="col-span-2 md:col-span-1">
+      <p class="wordmark font-bold tracking-[0.3em]">ENTITY</p>
+      <p class="mt-3 text-dim leading-relaxed">
         Adaptive on-device LLM runtime for Arm phones. Fully offline. Apache-2.0.
       </p>
       <p class="mt-2 text-dim">Arm Create: AI Optimization Challenge 2026.</p>
+      <a href={withBase("/apps/#download")} class="btn btn-solid mt-5">Download ENTITY</a>
+      <p class="mt-4 text-[0.75rem] text-dim">
+        Built by <a href="https://kkjj.me">Kamalesh VS</a>.
+      </p>
     </div>
     <div>
-      <p class="microlabel">Project</p>
-      <ul class="mt-2 space-y-1">
-        <li><a href={repo}>Source repository</a></li>
-        <li><a href={withBase("/apps/#download")}>APK downloads</a></li>
+      <p class="eyebrow">Product</p>
+      <ul class="mt-3 space-y-1.5">
+        <li><a href={withBase("/apps/")}>Apps &amp; downloads</a></li>
         <li><a href={withBase("/leaderboard/")}>Device leaderboard</a></li>
-        <li><a href={withBase("/journey/")}>Withdrawn claims</a></li>
+        <li><a href={repo}>Source repository</a></li>
       </ul>
     </div>
     <div>
-      <p class="microlabel">Built on</p>
-      <ul class="mt-2 space-y-1">
+      <p class="eyebrow">The evidence</p>
+      <ul class="mt-3 space-y-1.5">
+        <li><a href={withBase("/evidence/")}>Evidence record</a></li>
+        <li><a href={withBase("/optimizations/")}>Optimizations</a></li>
+        <li><a href={withBase("/journey/")}>Withdrawn claims</a></li>
+        <li><a href={withBase("/docs/")}>Docs</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="eyebrow">Built on</p>
+      <ul class="mt-3 space-y-1.5">
         <li><a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a></li>
         <li><a href="https://github.com/ARM-software/kleidiai">Arm KleidiAI</a></li>
         <li>
-          <a href="https://github.com/ggml-org/llama.cpp/pull/25701"
-            >llama.cpp PR #25701</a
-          >
+          <a href="https://github.com/ggml-org/llama.cpp/pull/25701">llama.cpp PR #25701</a>
           <span class="text-dim">- KleidiAI fallback warning, merged upstream</span>
         </li>
       </ul>

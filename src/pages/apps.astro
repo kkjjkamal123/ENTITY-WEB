@@ -2,30 +2,30 @@
 import Layout from "../components/Layout.astro";
 import PhoneFrame from "../components/PhoneFrame.astro";
 import Shot from "../components/Shot.astro";
-import IsaChipGrid from "../components/IsaChipGrid.astro";
+import Carousel from "../components/Carousel.astro";
 import { withBase } from "../lib/url";
 
 const REPO = "https://github.com/kkjjkamal123/ENTITY---Arm-Create-AI-Optimization-Challenge";
-const DL = "https://github.com/kkjjkamal123/ENTITY/releases/latest/download";
+const DL = `${REPO}/releases/latest/download`;
 
-const chatShots: { slug: any; cap: string }[] = [
-  { slug: "chat-home", cap: "Live metrics while generating: 100tok - 16.4t/s - TTFT 299ms - 33.0C - 4.34W - CPU 47% - 1.2GB, plus the selectable colour graph - the one colour surface in the app." },
-  { slug: "chat-menu", cap: "The drawer: v3.6.2, conversation history, model selector, BENCHMARK / SHARE CHAT / BENCHMARK HISTORY, SETTINGS, ABOUT." },
-  { slug: "chat-models", cap: "Models: on-device files plus a catalog sized and ranked for this phone, with KLEIDIAI / NO KLEIDIAI and GOOD FIT / FITS chips per row." },
-  { slug: "chat-model-info", cap: "Model info: KLEIDIAI ACTIVE - Q4_0, 773 MB, trained context 131,072, running context 4096 (auto-fit to free RAM), Compute: CPU - 4 perf cores - dotprod - KleidiAI active." },
-  { slug: "chat-benchmark", cap: "The in-chat benchmark: runs per config, sustained thermal test, PP 512 / TG 128, cooldown before every pass." },
-  { slug: "chat-about", cap: "About, in the app's own words: BIG-CORE AFFINITY, RUNTIME-SELECTED CPU BACKEND, ADAPTIVE CONTEXT, AUTO MODE, THERMAL-AWARE GUARD, KV SESSION CACHE." },
-  { slug: "chat-settings-1", cap: "Theme (System / Light / Dark), Monochrome / Colour palette, text size, live metrics and graph series." },
-  { slug: "chat-settings-2", cap: "Auto (optimized) plus manual sliders, Efficiency mode, and CORE PLACEMENT: AUTO / PERF CORES / SCHEDULER - pinning is a setting, not an assumption." },
-  { slug: "chat-benchmark-history", cap: "Benchmark history, saved on-device: +85% decode vs naive, 1 run, 3-arm, unplugged." },
+const chatShots: { slug: any; title: string; cap: string }[] = [
+  { slug: "chat-home", title: "Live metrics while it generates", cap: "100 tok - 16.4 t/s - TTFT 299 ms - 33.0C - 4.34 W - CPU 47% - 1.2 GB, plus the selectable colour graph, the one colour surface in the app." },
+  { slug: "chat-menu", title: "One drawer, everything", cap: "v3.6.2, conversation history, model selector, BENCHMARK / SHARE CHAT / BENCHMARK HISTORY, SETTINGS and ABOUT." },
+  { slug: "chat-models", title: "A catalog sized to your phone", cap: "On-device files plus a catalog ranked for this SoC, with KLEIDIAI / NO KLEIDIAI and GOOD FIT / FITS chips per row." },
+  { slug: "chat-model-info", title: "The full model readout", cap: "KLEIDIAI ACTIVE - Q4_0, 773 MB, trained context 131,072, running context 4096 auto-fit to free RAM. Compute: CPU, 4 perf cores, dotprod, KleidiAI active." },
+  { slug: "chat-benchmark", title: "Benchmark from inside chat", cap: "Runs per config, sustained thermal test, PP 512 / TG 128, and a cooldown before every pass." },
+  { slug: "chat-about", title: "The runtime, in its own words", cap: "BIG-CORE AFFINITY, RUNTIME-SELECTED CPU BACKEND, ADAPTIVE CONTEXT, AUTO MODE, THERMAL-AWARE GUARD, KV SESSION CACHE." },
+  { slug: "chat-settings-1", title: "Yours to theme", cap: "Theme (System / Light / Dark), Monochrome / Colour palette, text size, and which live-metric series the graph draws." },
+  { slug: "chat-settings-2", title: "Auto, or exactly your way", cap: "Auto (optimized) plus manual sliders, Efficiency mode, and CORE PLACEMENT: AUTO / PERF CORES / SCHEDULER - pinning is a setting, not an assumption." },
+  { slug: "chat-benchmark-history", title: "Every run, kept on-device", cap: "Benchmark history saved locally: +85% decode vs naive, 1 run, 3-arm, unplugged." },
 ];
 
-const benchShots: { slug: any; cap: string }[] = [
-  { slug: "bench-device", cap: "Device under test: Nothing A015, 4x 2.5GHz + 4x 2.0GHz, UNPLUGGED OK - and the optimization grid: solid = live on this device, outline = not present." },
-  { slug: "bench-config-result", cap: "Config and last result: 3-ARM / SUSTAINED / SWEEP, runs per arm, DECODE +102% VS NAIVE - what the bench screen reported on one run (single-pass, provisional under the leaderboard's own rules) - and the footer: v2.1.1 - arm64 - no network - results stay on this phone." },
-  { slug: "bench-settings", cap: "Settings: theme, palette, keep screen on during a run, the optional efficiency-core arm, model and result management." },
-  { slug: "bench-contribute", cap: "Contribute results: off by default, summary numbers only, no accounts, no identifier linking two runs - plus SHOW EXACTLY WHAT GETS SENT." },
-  { slug: "bench-full-result", cap: "A full result: prompt 111/127/140, decode 9.0/14.6/18.1, TTFT 4724/4100/3712 ms, power 4.3/4.6/4.2 W, tok/W 2.1/3.2/4.3, with clocks, free RAM and thermal state per arm." },
+const benchShots: { slug: any; title: string; cap: string }[] = [
+  { slug: "bench-device", title: "Know the device under test", cap: "Nothing A015, 4x 2.5GHz + 4x 2.0GHz, UNPLUGGED OK - with the optimization grid: solid = live on this device, outline = not present." },
+  { slug: "bench-config-result", title: "Configure, then attribute", cap: "3-ARM / SUSTAINED / SWEEP, runs per arm, DECODE +102% VS NAIVE - one run, single-pass and provisional under the leaderboard's own rules. Footer: v2.1.1, arm64, no network, results stay on this phone." },
+  { slug: "bench-settings", title: "Control the run", cap: "Theme, palette, keep screen on during a run, the optional efficiency-core arm, plus model and result management." },
+  { slug: "bench-contribute", title: "Contribute, on your terms", cap: "Off by default, summary numbers only, no accounts, no identifier linking two runs - with SHOW EXACTLY WHAT GETS SENT before the first upload." },
+  { slug: "bench-full-result", title: "The whole result, per arm", cap: "Prompt 111/127/140, decode 9.0/14.6/18.1, TTFT 4724/4100/3712 ms, power 4.3/4.6/4.2 W, tok/W 2.1/3.2/4.3, with clocks, free RAM and thermal state." },
 ];
 ---
 
@@ -47,7 +47,10 @@ const benchShots: { slug: any; cap: string }[] = [
   <section id="download" class="mx-auto max-w-[1200px] px-4 md:px-6 pb-10 grid grid-cols-1 md:grid-cols-2 gap-4 scroll-mt-20">
     <div class="card p-6 min-w-0">
       <div class="flex items-center gap-3">
-        <img src={withBase("/img/icon-dark.png")} alt="" width="40" height="40" class="rounded-[9px] border border-outline" />
+        <span class="grid place-items-center w-11 h-11 rounded-[10px] border border-outline bg-surface shrink-0">
+          <img src={withBase("/img/icon-dark.png")} alt="ENTITY icon" width="36" height="36" class="only-dark" />
+          <img src={withBase("/img/icon-light.png")} alt="ENTITY icon" width="36" height="36" class="only-light" />
+        </span>
         <div>
           <h2 class="text-lg font-bold leading-tight">ENTITY <span class="text-dim font-normal text-[0.8125rem]">v3.6.2</span></h2>
           <p class="text-[0.6875rem] text-dim">on-device LLM chat</p>
@@ -62,7 +65,10 @@ const benchShots: { slug: any; cap: string }[] = [
     </div>
     <div class="card p-6 min-w-0">
       <div class="flex items-center gap-3">
-        <img src={withBase("/img/bench-icon-dark.png")} alt="" width="40" height="40" class="rounded-[9px] border border-outline" />
+        <span class="grid place-items-center w-11 h-11 rounded-[10px] border border-outline bg-surface shrink-0">
+          <img src={withBase("/img/bench-icon-dark.png")} alt="ENTITY Bench icon" width="36" height="36" class="only-dark" />
+          <img src={withBase("/img/bench-icon-light.png")} alt="ENTITY Bench icon" width="36" height="36" class="only-light" />
+        </span>
         <div>
           <h2 class="text-lg font-bold leading-tight">ENTITY Bench <span class="text-dim font-normal text-[0.8125rem]">v2.1.1</span></h2>
           <p class="text-[0.6875rem] text-dim">on-device LLM benchmark</p>
@@ -101,17 +107,25 @@ adb install -r apk/ENTITY-v24-entity-identity-prompt-20260724-release.apk</code>
       <li>Live stats bar and seven-series graph: tokens, rate, TTFT, temperature, watts, CPU, memory.</li>
       <li>In-app three-arm benchmark with history, CSV export and core-placement verdict.</li>
     </ul>
-    <div class="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {
-        chatShots.map((s) => (
-          <figure class="min-w-0">
-            <PhoneFrame>
-              <Shot slug={s.slug} alt={s.cap} />
-            </PhoneFrame>
-            <figcaption class="mt-2 text-[0.6875rem] leading-relaxed">{s.cap}</figcaption>
-          </figure>
-        ))
-      }
+    <div class="mt-6 card p-4 md:p-8" data-reveal>
+      <Carousel id="chat-shots" label="ENTITY chat screenshots">
+        {
+          chatShots.map((s, i) => (
+            <figure class="carousel__slide">
+              <div class="showcase">
+                <PhoneFrame class="w-full max-w-[22rem]">
+                  <Shot slug={s.slug} alt={s.title} eager={i === 0} />
+                </PhoneFrame>
+                <figcaption>
+                  <p class="eyebrow">{`ENTITY chat - ${i + 1} / ${chatShots.length}`}</p>
+                  <h3 class="mt-3 text-xl md:text-3xl font-bold leading-tight">{s.title}</h3>
+                  <p class="mt-4 text-[0.9375rem] md:text-lg text-dim leading-relaxed">{s.cap}</p>
+                </figcaption>
+              </div>
+            </figure>
+          ))
+        }
+      </Carousel>
     </div>
   </section>
 
@@ -120,41 +134,27 @@ adb install -r apk/ENTITY-v24-entity-identity-prompt-20260724-release.apk</code>
     <p class="mt-2 text-dim text-[0.875rem] max-w-[68ch]">
       No chat. Import a model, run the ablation, get an attributed result: naive, threads-only,
       auto - plus the optional efficiency-core arm, SUSTAINED mode (who throttles first once the
-      SoC is hot) and SWEEP mode (every thread width, pinned and scheduler-placed). The device
-      card's optimization grid gates on the CPU's real ISA flags:
+      SoC is hot) and SWEEP mode (every thread width, pinned and scheduler-placed).
     </p>
-    <div class="mt-4 max-w-[36rem]">
-      <IsaChipGrid
-        legend
-        chips={[
-          ["i8mm gemm", false],
-          ["dotprod gemm", true],
-          ["sve2 kernels", false],
-          ["sme", false],
-          ["sme2 kleidiai", false],
-          ["fp16 vector", true],
-          ["kleidiai q4_0", true],
-          ["big.LITTLE pin", true],
-          ["adaptive threads", true],
-          ["adaptive ctx", true],
-          ["thermal guard", true],
-          ["mmap weights", true],
-          ["energy telem", true],
-        ]}
-      />
-      <p class="mt-1 text-[0.6875rem] text-dim">The reference device's grid (Dimensity 7300): dotprod lit, i8mm dark.</p>
-    </div>
-    <div class="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      {
-        benchShots.map((s) => (
-          <figure class="min-w-0">
-            <PhoneFrame>
-              <Shot slug={s.slug} alt={s.cap} />
-            </PhoneFrame>
-            <figcaption class="mt-2 text-[0.6875rem] leading-relaxed">{s.cap}</figcaption>
-          </figure>
-        ))
-      }
+    <div class="mt-6 card p-4 md:p-8" data-reveal>
+      <Carousel id="bench-shots" label="ENTITY Bench screenshots">
+        {
+          benchShots.map((s, i) => (
+            <figure class="carousel__slide">
+              <div class="showcase">
+                <PhoneFrame class="w-full max-w-[22rem]">
+                  <Shot slug={s.slug} alt={s.title} eager={i === 0} />
+                </PhoneFrame>
+                <figcaption>
+                  <p class="eyebrow">{`ENTITY Bench - ${i + 1} / ${benchShots.length}`}</p>
+                  <h3 class="mt-3 text-xl md:text-3xl font-bold leading-tight">{s.title}</h3>
+                  <p class="mt-4 text-[0.9375rem] md:text-lg text-dim leading-relaxed">{s.cap}</p>
+                </figcaption>
+              </div>
+            </figure>
+          ))
+        }
+      </Carousel>
     </div>
     <p class="mt-6 text-[0.8125rem] text-dim">
       Sources and build instructions: <a href={REPO}>the repository</a> &middot; contribute a

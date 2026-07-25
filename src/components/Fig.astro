@@ -26,7 +26,7 @@ const { id, title, shows, data, dataNote, controls = true } = Astro.props;
     <div class="flex items-center gap-2 shrink-0">
       <span
         class:list={[
-          "chip !text-[0.625rem]",
+          "chip !text-[0.6875rem]",
           data === "schematic" && "!border-dashed",
         ]}
         data-on={data === "measured" || undefined}
@@ -40,7 +40,7 @@ const { id, title, shows, data, dataNote, controls = true } = Astro.props;
               data-fig-toggle
               aria-pressed="false"
               aria-label="Pause animation"
-              class="btn !py-0.5 !px-2 !text-[0.625rem] !normal-case !tracking-normal"
+              class="btn !py-0.5 !px-2 !text-[0.6875rem] !normal-case !tracking-normal"
             >
               pause
             </button>
@@ -48,7 +48,7 @@ const { id, title, shows, data, dataNote, controls = true } = Astro.props;
               type="button"
               data-fig-replay
               aria-label="Replay animation"
-              class="btn !py-0.5 !px-2 !text-[0.625rem] !normal-case !tracking-normal"
+              class="btn !py-0.5 !px-2 !text-[0.6875rem] !normal-case !tracking-normal"
             >
               replay
             </button>

@@ -1,6 +1,5 @@
 ---
 import Layout from "../components/Layout.astro";
-import CaveatCard from "../components/CaveatCard.astro";
 import PhoneFrame from "../components/PhoneFrame.astro";
 import Shot from "../components/Shot.astro";
 import A8Pinning from "../components/figures/A8Pinning.astro";
@@ -27,16 +26,16 @@ const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
   description="Every contributed ENTITY Bench run, one row per device: how much thread-count tuning and core pinning earned on that Arm silicon, with power gated on validity."
   path="/leaderboard/"
 >
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pt-12 pb-6">
-    <p class="microlabel">Contributed dataset &middot; {groups.length} devices &middot; {socCount} SoCs</p>
-    <h1 class="mt-3 text-2xl md:text-3xl font-bold max-w-[26ch]">
-      How much tuning earns, per chip
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pt-14 md:pt-20 pb-6">
+    <p class="eyebrow">Contributed dataset &middot; {groups.length} devices &middot; {socCount} SoCs</p>
+    <h1 class="mt-4 text-3xl md:text-[2.75rem] leading-[1.1] font-bold max-w-[20ch] tracking-tight">
+      How much tuning earns, <span class="text-accent-ink">per chip</span>
     </h1>
-    <p class="mt-3 max-w-[68ch] text-dim text-[0.875rem]">
-      One row per device and quantization, newest first: the decode multiplier ENTITY's derived
-      configuration earned over the naive 8-thread default on that silicon. The board answers
-      "how much does tuning earn on this chip", not "which phone is fastest". Anyone can add a
-      row: run ENTITY Bench unplugged and switch on sharing.
+    <p class="mt-4 max-w-[64ch] text-dim text-[0.9375rem]">
+      One row per device and quantization: the decode multiplier ENTITY earned over the naive
+      8-thread default on that silicon. It answers "how much does tuning earn on this chip", not
+      "which phone is fastest". Anyone can add a row - run ENTITY Bench unplugged and switch on
+      sharing.
     </p>
     <p id="lb-status" class="mt-2 text-[0.6875rem] text-dim">
       snapshot &middot; {snapshot.rows.length} submissions
@@ -52,7 +51,6 @@ const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
             [
               ["multiplier", "Tuning multiplier"],
               ["decode", "Decode tok/s"],
-              ["prompt", "Prompt tok/s"],
               ["tokw", "Tokens per watt"],
             ] as const
           ).map(([k, label]) => (
@@ -107,30 +105,24 @@ const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
           <input type="checkbox" id="f-power" class="accent-[var(--fill)]" />
           valid power only
         </label>
-        <button type="button" id="lb-clear" class="btn !py-0.5 !px-2 !text-[0.625rem]">clear</button>
+        <button type="button" id="lb-clear" class="btn !py-0.5 !px-2 !text-[0.6875rem]">clear</button>
       </div>
 
       <p id="lb-live-stats" class="mt-3 text-[0.6875rem] text-dim"></p>
 
       <div class="scroll-x mt-3 card !rounded-[10px]">
-        <table id="lb-table" class="data-table min-w-[1080px] hidden md:table">
+        <table id="lb-table" class="data-table min-w-[680px] hidden md:table">
           <caption class="sr-only">
             Contributed ENTITY Bench results, one row per device and quantization
           </caption>
           <thead>
             <tr>
               <th scope="col">Device</th>
-              <th scope="col">SoC</th>
-              <th scope="col">Topology</th>
-              <th scope="col">ISA</th>
-              <th scope="col">Model</th>
+              <th scope="col">SoC &amp; model</th>
               <th scope="col" class="num">Naive tok/s</th>
               <th scope="col" class="num">Tuned tok/s</th>
               <th scope="col" class="num" data-sort="multiplier" aria-sort="descending">
                 <button type="button" data-thsort="multiplier" class="cursor-pointer uppercase tracking-[0.1em] font-medium">Multiplier</button>
-              </th>
-              <th scope="col" class="num" data-sort="prompt" aria-sort="none">
-                <button type="button" data-thsort="prompt" class="cursor-pointer uppercase tracking-[0.1em] font-medium">Prompt</button>
               </th>
               <th scope="col" class="num" data-sort="tokw" aria-sort="none">
                 <button type="button" data-thsort="tokw" class="cursor-pointer uppercase tracking-[0.1em] font-medium">tok/W</button>
@@ -150,22 +142,19 @@ const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
 
     {/* no-JS fallback: complete, honest, static */}
     <div id="lb-static" class="scroll-x card !rounded-[10px]">
-      <table class="data-table min-w-[720px]">
+      <table class="data-table min-w-[620px]">
         <caption class="sr-only">
           Contributed ENTITY Bench results (static snapshot), sorted by tuning multiplier
         </caption>
         <thead>
           <tr>
             <th scope="col">Device</th>
-            <th scope="col">SoC</th>
-            <th scope="col">Quant</th>
+            <th scope="col">SoC &amp; model</th>
             <th scope="col" class="num">Naive tok/s</th>
             <th scope="col" class="num">Tuned tok/s</th>
             <th scope="col" class="num">Multiplier</th>
-            <th scope="col" class="num">Prompt</th>
             <th scope="col" class="num">tok/W</th>
             <th scope="col" class="num">Runs</th>
-            <th scope="col">Date</th>
           </tr>
         </thead>
         <tbody>
@@ -174,13 +163,17 @@ const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
               const d = g.primary;
               return (
                 <tr>
-                  <td>{d.device}</td>
-                  <td>{d.soc.name}</td>
-                  <td>{d.row.quantization}</td>
+                  <td>
+                    {d.device}
+                    <span class="block text-[0.6875rem] text-dim">{dateOf(d.row.received_at)}</span>
+                  </td>
+                  <td>
+                    {d.soc.name}
+                    <span class="block text-[0.6875rem] text-dim">{d.row.quantization}</span>
+                  </td>
                   <td class="num">{fmt(d.naive?.decode_tok_s)}{d.highVariance && <span class="t-danger" title="decode RSD above 25% - excluded from aggregates"> (high sd)</span>}</td>
                   <td class="num">{fmt(d.optimized?.decode_tok_s)}</td>
-                  <td class="num font-bold">{fmtX(d.multiplier)}</td>
-                  <td class="num">{fmt(d.optimized?.prompt_tok_s, 0)}</td>
+                  <td class="num font-bold text-accent-ink">{fmtX(d.multiplier)}</td>
                   <td class="num">
                     {d.powerUsable ? (
                       fmt(d.optimized?.tok_per_w, 2)
@@ -189,7 +182,6 @@ const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
                     )}
                   </td>
                   <td class="num">{d.row.runs_per_arm}{d.provisional && <span class="t-warn" title="single pass - provisional"> (1 run)</span>}</td>
-                  <td>{dateOf(d.row.received_at)}</td>
                 </tr>
               );
             })
@@ -199,103 +191,101 @@ const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
     </div>
   </section>
 
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-4" aria-label="Reading rules">
-    <CaveatCard title="How to read this board">
-      <ul class="list-disc pl-4 space-y-1.5">
-        <li>
-          Power and tok/W never render from a charging run - a charging phone reports the
-          charger's current, not the workload's. Rows whose arms report physically inconsistent
-          watts are flagged and excluded from power columns; the raw values stay in the detail
-          panel.
-        </li>
-        <li>
-          n is always shown. A 1-run row is a single pass and provisional: two back-to-back
-          single passes on the same phone, model and quant have disagreed by up to 19.6%.
-        </li>
-        <li>
-          Arms with decode relative SD above 25% are flagged and excluded from every aggregate.
-          The cautionary case is real: one Galaxy S23 naive arm measured 6.72 &plusmn; 5.95 tok/s,
-          an 88.5% relative SD - noise, not a measurement.
-        </li>
-        <li>
-          One row per device + quantization, newest first, so a phone that submitted six times
-          does not dominate. Older runs expand inside the row. Byte-identical re-uploads are
-          collapsed and counted.
-        </li>
-        <li>
-          Q8_0 rows are Qwen2.5-0.5B and Q4_0 rows are Llama-3.2-1B - never compare numbers
-          across models; each row's multiplier is within-row and safe.
-        </li>
-      </ul>
-    </CaveatCard>
-    <CaveatCard title="What the multiplier is not">
-      <p>
-        The optimized-vs-naive ratio must not be read as pinning earning the energy. On the axis
-        that isolates pinning - threads-only to optimized, same thread count, affinity the only
-        difference - the median across the dataset is <strong>+0.6% decode and -1.5% tok/W,
-        positive on only 3 of 6 rows</strong> (benchmarks/CONTRIBUTED-DATA.md). The thread count
-        is the lever that generalises; the figure below is the pinning story in full.
-      </p>
-    </CaveatCard>
-  </section>
-
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-6">
-    <A8Pinning />
-  </section>
-
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <div class="card p-6 min-w-0">
-      <p class="microlabel">What the dataset established</p>
-      <ul class="mt-3 space-y-3 text-[0.8125rem] leading-relaxed">
-        <li>
-          <strong>Thread-count tuning pays on every SoC measured: 1.65x to 3.58x, and no device
-          regressed</strong> (as of 2026-07-23, 12 rows, 5 SoCs). Rows contributed since keep the
-          no-regression record and widen the spread - including a 4.27x on a Snapdragon 865
-          (3 runs) and a 1.34x on an armv8.0 phone with no dotprod at all (1 run, provisional).
-        </li>
-        <li>
-          <strong>Pinning is a speed lever with a power cost, not an energy lever.</strong>
-          Median +0.6% decode, -1.5% tok/W on the axis that isolates it. Correctly a setting,
-          not a default, since v3.5.0.
-        </li>
-        <li>
-          <strong>The gain scales with core heterogeneity.</strong> A flat 4+4 gets about 1.8x;
-          the widest-spread flagships about 3.5x. The Dimensity 8300 at 1.65x is the reminder
-          that a narrow prime gap behaves like a flat device.
-        </li>
-      </ul>
-    </div>
-    <div class="card p-6 min-w-0">
-      <p class="microlabel">What the dataset falsified</p>
-      <p class="mt-3 text-[0.8125rem] leading-relaxed">
-        OPTIMIZATIONS.md predicted a flagship with more than four performance cores would derive
-        5 or 6 generation threads. The dataset showed the opposite. The rule counted cores within
-        10% of the fastest <em>clock</em>, and every modern flagship puts its prime core 17-20%
-        above its own big cluster - so the count collapsed to 1, was clamped back to 2, and
-        prefill inherited it. A Dimensity 7300 prefilled Llama-3.2-1B-Q4_0 at <strong>139
-        tok/s</strong> while an SM8550 - stronger silicon, with i8mm - managed <strong>111</strong>.
-      </p>
-      <div class="scroll-x mt-3">
-        <table class="data-table min-w-[380px]">
-          <caption class="sr-only">Cores passing the 10% clock window per SoC</caption>
-          <thead>
-            <tr><th scope="col">SoC</th><th scope="col" class="num">top MHz</th><th scope="col" class="num">pass 10% window</th><th scope="col" class="num">after clamp</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Dimensity 7300</td><td class="num">2500</td><td class="num">4</td><td class="num">4</td></tr>
-            <tr><td>Tensor G5</td><td class="num">3782</td><td class="num t-danger">1</td><td class="num">2</td></tr>
-            <tr><td>SM8550</td><td class="num">3360</td><td class="num t-danger">1</td><td class="num">2</td></tr>
-            <tr><td>SM8450</td><td class="num">2995</td><td class="num t-danger">1</td><td class="num">2</td></tr>
-          </tbody>
-        </table>
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-6 space-y-3" aria-label="Reading rules and findings">
+    <details class="disclosure" data-reveal>
+      <summary>How to read this board</summary>
+      <div class="disclosure__body grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-[0.8125rem] leading-relaxed">
+        <ul class="list-disc pl-4 space-y-1.5">
+          <li>
+            Power and tok/W never render from a charging run - a charging phone reports the
+            charger's current, not the workload's. Rows whose arms report physically inconsistent
+            watts are flagged and excluded from power columns; the raw values stay in the detail
+            panel.
+          </li>
+          <li>
+            n is always shown. A 1-run row is a single pass and provisional: two back-to-back
+            single passes on the same phone, model and quant have disagreed by up to 19.6%.
+          </li>
+          <li>
+            Arms with decode relative SD above 25% are flagged and excluded from every aggregate.
+            One Galaxy S23 naive arm measured 6.72 &plusmn; 5.95 tok/s, an 88.5% relative SD -
+            noise, not a measurement.
+          </li>
+        </ul>
+        <ul class="list-disc pl-4 space-y-1.5">
+          <li>
+            One row per device + quantization, newest first, so a phone that submitted six times
+            does not dominate. Older runs expand inside the row; byte-identical re-uploads are
+            collapsed and counted.
+          </li>
+          <li>
+            Q8_0 rows are Qwen2.5-0.5B and Q4_0 rows are Llama-3.2-1B - never compare numbers
+            across models; each row's multiplier is within-row and safe.
+          </li>
+          <li>
+            The multiplier is not pinning earning energy. On the axis that isolates pinning the
+            median is <strong>+0.6% decode and -1.5% tok/W</strong>, positive on only 3 of 6 rows.
+            The thread count is the lever that generalises.
+          </li>
+        </ul>
       </div>
-      <p class="mt-3 text-[0.8125rem] leading-relaxed">
-        Both of the author's phones were structurally immune - the CMF is a flat 4+4 and the
-        OPPO's prime sits only 4.3% above its big cluster - so the bug was invisible on every
-        device he owned. <strong>That is the argument for this dataset in one paragraph.</strong>
-        Fixed in v3.5.0 by deriving prefill width from kernel cpu_capacity instead.
-      </p>
-    </div>
+    </details>
+
+    <details class="disclosure" data-reveal>
+      <summary>What the dataset established, and what it falsified</summary>
+      <div class="disclosure__body">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="min-w-0">
+            <p class="eyebrow">Established</p>
+            <ul class="mt-3 space-y-3 text-[0.8125rem] leading-relaxed">
+              <li>
+                <strong>Thread-count tuning pays on every SoC measured: 1.65x to 3.58x, and no
+                device regressed</strong> (as of 2026-07-23, 12 rows, 5 SoCs). Later rows widen
+                the spread - a 4.27x on a Snapdragon 865 (3 runs) and a 1.34x on an armv8.0 phone
+                with no dotprod (1 run, provisional).
+              </li>
+              <li>
+                <strong>Pinning is a speed lever with a power cost, not an energy lever.</strong>
+                Median +0.6% decode, -1.5% tok/W on the axis that isolates it. A setting, not a
+                default, since v3.5.0.
+              </li>
+              <li>
+                <strong>The gain scales with core heterogeneity.</strong> A flat 4+4 gets about
+                1.8x; the widest-spread flagships about 3.5x.
+              </li>
+            </ul>
+          </div>
+          <div class="min-w-0">
+            <p class="eyebrow">Falsified</p>
+            <p class="mt-3 text-[0.8125rem] leading-relaxed">
+              OPTIMIZATIONS.md predicted a flagship with more than four performance cores would
+              derive 5 or 6 generation threads. The dataset showed the opposite: the rule counted
+              cores within 10% of the fastest <em>clock</em>, and every modern flagship puts its
+              prime core 17-20% above its own big cluster - so the count collapsed to 1 and was
+              clamped to 2. A Dimensity 7300 prefilled at <strong>139 tok/s</strong> while an
+              SM8550 with i8mm managed <strong>111</strong>. Fixed in v3.5.0 with cpu_capacity.
+            </p>
+            <div class="scroll-x mt-3">
+              <table class="data-table min-w-[380px]">
+                <caption class="sr-only">Cores passing the 10% clock window per SoC</caption>
+                <thead>
+                  <tr><th scope="col">SoC</th><th scope="col" class="num">top MHz</th><th scope="col" class="num">pass 10%</th><th scope="col" class="num">after clamp</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Dimensity 7300</td><td class="num">2500</td><td class="num">4</td><td class="num">4</td></tr>
+                  <tr><td>Tensor G5</td><td class="num">3782</td><td class="num t-danger">1</td><td class="num">2</td></tr>
+                  <tr><td>SM8550</td><td class="num">3360</td><td class="num t-danger">1</td><td class="num">2</td></tr>
+                  <tr><td>SM8450</td><td class="num">2995</td><td class="num t-danger">1</td><td class="num">2</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="mt-6">
+          <A8Pinning />
+        </div>
+      </div>
+    </details>
   </section>
 
   <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8 items-start">

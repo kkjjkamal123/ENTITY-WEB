@@ -3,32 +3,42 @@
   The chat app's live stats bar, used as site chrome between sections.
   Values are the ones visible in the shipped screenshot (Home.png):
   100tok - 16.4t/s - TTFT 299ms - 33.0C - 4.34W - CPU 47% - 1.2GB
+  Rendered as a continuous ticker (it is a *live* bar); reduced motion turns it
+  back into a static horizontal scroll via the .marquee rules in global.css.
 */
 const items = [
-  "100tok",
-  "16.4t/s",
-  "TTFT 299ms",
+  "100 tok",
+  "16.4 t/s",
+  "TTFT 299 ms",
   "33.0°C",
-  "4.34W",
+  "4.34 W",
   "CPU 47%",
-  "1.2GB",
+  "1.2 GB",
+  "live stats bar - ENTITY v3.6.2",
 ];
 ---
 
 <div
-  class="border-y border-outline bg-surface/60 overflow-hidden"
+  class="marquee border-y border-outline bg-surface/50"
+  style="--marquee-dur:38s"
   role="separator"
   aria-label="Live metrics divider, values from the shipped app"
 >
-  <div class="mx-auto max-w-[1200px] px-4 md:px-6">
-    <p class="flex flex-wrap items-center gap-x-3 gap-y-0 py-2 text-[0.6875rem] tracking-[0.08em] text-dim whitespace-nowrap">
-      {items.map((it, i) => (
-        <>
-          {i > 0 && <span aria-hidden="true">&middot;</span>}
-          <span>{it}</span>
-        </>
-      ))}
-      <span class="ml-auto hidden md:inline text-dim">live stats bar, ENTITY v3.6.2</span>
-    </p>
-  </div>
+  {
+    [0, 1].map((t) => (
+      <p
+        class="marquee__track items-center py-2 text-[0.6875rem] tracking-[0.1em] text-dim"
+        aria-hidden={t === 1 ? "true" : undefined}
+      >
+        {items.map((it) => (
+          <span class="flex items-center whitespace-nowrap">
+            <span aria-hidden="true" class="mx-4 text-accent">&middot;</span>
+            <span class:list={it.startsWith("live") ? "text-dim" : "text-fg"}>
+              {it}
+            </span>
+          </span>
+        ))}
+      </p>
+    ))
+  }
 </div>

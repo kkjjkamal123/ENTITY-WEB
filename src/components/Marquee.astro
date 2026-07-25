@@ -1,0 +1,36 @@
+---
+/*
+  Continuous keyword ticker. Two identical tracks give a seamless loop; the
+  second is aria-hidden. Under reduced motion the CSS drops the duplicate and
+  turns the band into a plain horizontal scroll, so nothing is lost.
+*/
+interface Props {
+  items: string[];
+  dur?: string; // marquee duration, e.g. "40s"
+  class?: string;
+}
+const { items, dur = "44s", class: cls = "" } = Astro.props;
+---
+
+<div
+  class:list={["marquee border-y border-outline bg-surface/40 py-2.5", cls]}
+  style={`--marquee-dur:${dur}`}
+  role="marquee"
+  aria-label="ENTITY keywords"
+>
+  {
+    [0, 1].map((t) => (
+      <ul
+        class="marquee__track items-center gap-0 text-[0.6875rem] tracking-[0.16em] uppercase text-dim"
+        aria-hidden={t === 1 ? "true" : undefined}
+      >
+        {items.map((it) => (
+          <li class="flex items-center whitespace-nowrap px-5">
+            <span aria-hidden="true" class="mr-5 text-accent">&#9670;</span>
+            {it}
+          </li>
+        ))}
+      </ul>
+    ))
+  }
+</div>

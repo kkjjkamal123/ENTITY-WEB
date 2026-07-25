@@ -2,7 +2,10 @@
 import Layout from "../components/Layout.astro";
 import MetricsStrip from "../components/MetricsStrip.astro";
 import A1Race from "../components/figures/A1Race.astro";
-import A2Straggler from "../components/figures/A2Straggler.astro";
+import Carousel from "../components/Carousel.astro";
+import Marquee from "../components/Marquee.astro";
+import PhoneFrame from "../components/PhoneFrame.astro";
+import Shot from "../components/Shot.astro";
 import { withBase } from "../lib/url";
 import snapshot from "../data/leaderboard.json";
 import { processRows, sortGroups, fmtX, type BenchRow } from "../lib/bench";
@@ -12,95 +15,118 @@ const top3 = sortGroups(
   groups.filter((g) => !g.primary.highVariance),
   "multiplier"
 ).slice(0, 3);
+const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
 
 const stats = [
-  {
-    n: "+68%",
-    what: "decode vs naive",
-    cond: "10.8 to 18.1 tok/s, CMF Phone 1, 5 runs per arm, 2026-07-18",
-  },
-  {
-    n: "42%",
-    what: "less battery, same 128 tokens",
-    cond: "86 J naive vs 50 J optimized, unplugged, integrated from 150 ms samples",
-  },
-  {
-    n: "3.4x",
-    what: "lower time to first token",
-    cond: "13,440 ms in v2.0.0 to 3,918 ms in v2.1.0, same phone and model",
-  },
-  {
-    n: "0",
-    what: "network calls in the inference path",
-    cond: "the opt-in model catalog download is the only feature that touches the network",
-  },
+  { n: "+68%", to: 68, dec: 0, pre: "+", suf: "%", what: "faster decode vs naive", cond: "10.8 to 18.1 tok/s, CMF Phone 1, 5 runs per arm" },
+  { n: "42%", to: 42, dec: 0, pre: "", suf: "%", what: "less battery, same 128 tokens", cond: "86 J naive vs 50 J optimized, unplugged" },
+  { n: "3.4x", to: 3.4, dec: 1, pre: "", suf: "x", what: "lower time to first token", cond: "13,440 ms to 3,918 ms, same phone and model" },
+  { n: "0", to: 0, dec: 0, pre: "", suf: "", what: "network calls while it runs", cond: "the opt-in model download is the only network touch" },
 ];
 
-const decisions = [
+const marqueeWords = [
+  "Fully offline",
+  "arm64-v8a",
+  "Adaptive threads",
+  "Core pinning",
+  "Tokens per watt",
+  "KleidiAI-aware",
+  "Runtime CPU backend",
+  "Thermal-aware",
+  "Open source",
+];
+
+const steps = [
+  { t: "Reads the silicon", d: "Scores seven Arm CPU backends against the chip at startup and loads the fastest one it supports." },
+  { t: "Derives the threads", d: "Ranks cores by live frequency, picks the decode width from the top cluster, pins it to the performance cores." },
+  { t: "Proves the gain", d: "Ships the three-arm ablation - naive, threads-only, Auto - so you see which decision earned the speedup, in watts." },
+];
+
+const highlights: { slug: any; title: string; cap: string }[] = [
   {
-    t: "CPU backend",
-    d: "Ships seven Arm CPU backend variants, armv8.0 through armv9.2. ggml scores them against the silicon at startup and loads the best one the phone supports.",
+    slug: "chat-home",
+    title: "Live metrics, not vibes",
+    cap: "Every reply streams with a live stats bar - token rate, time to first token, temperature, watts and tokens per watt - so you can see the phone working, not just the words.",
   },
   {
-    t: "KleidiAI advisor",
-    d: "Arm's KleidiAI has kernels for Q4_0 and Q8_0 only. ENTITY reads the GGUF header and says whether the loaded model can reach Arm's kernels, and what it costs when it cannot.",
+    slug: "chat-models",
+    title: "A catalog that knows your phone",
+    cap: "On-device files plus a download catalog that is sized and ranked for this exact SoC, with GOOD FIT / FITS and KleidiAI badges per model.",
   },
   {
-    t: "Fast-core selection",
-    d: "Ranks cores by live max frequency, derives the decode width from the top cluster (2 to 6), and pins decode to the performance cores. Prefill derives a separate, usually wider set from kernel cpu_capacity.",
+    slug: "chat-model-info",
+    title: "Nothing hidden about the model",
+    cap: "Per-model readout: quant, KleidiAI active or not, trained context, and the running context auto-fit to your free RAM so a 3B-class model loads instead of failing.",
   },
   {
-    t: "Adaptive context",
-    d: "Selects a 2048 to 8192 token window from model size and free RAM, so a 3B-class model fits instead of failing.",
+    slug: "chat-benchmark",
+    title: "Benchmark the phone in-app",
+    cap: "The same three-arm ablation lives inside the chat app, with a sustained thermal test and cooldown before every pass.",
   },
   {
-    t: "Thermal policy",
-    d: "Checks Android thermal status during generation and adds a small cooperative delay when heat rises. Efficiency mode doubles the delay and caps inference at two threads.",
-  },
-  {
-    t: "Energy telemetry",
-    d: "Reports tokens, token rate, TTFT, temperature, watts, tokens per watt and free memory, live, while it generates.",
-  },
-  {
-    t: "Three-arm ablation",
-    d: "The benchmark does not just report a number, it attributes it: naive, threads-only, and Auto, so a reader sees which decision earned the speedup and which did not.",
+    slug: "chat-settings-2",
+    title: "Auto by default, yours to override",
+    cap: "ENTITY tunes itself, but core placement, efficiency mode and every sampler stay in your hands as a setting, never an assumption.",
   },
 ];
 ---
 
 <Layout
   title="ENTITY - adaptive on-device LLM runtime for Arm phones"
-  description="Fully offline Android chat that tunes llama.cpp to the Arm CPU in the phone, and proves which optimization earned the speedup: measured decode, energy per token, and a public device leaderboard."
+  description="Fully offline Android chat that tunes llama.cpp to the Arm CPU in the phone. Up to 68% faster decode and 42% less battery, with a public device leaderboard that proves it."
   path="/"
 >
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pt-14 md:pt-20 pb-10">
-    <p class="microlabel">Fully offline &middot; arm64-v8a &middot; Android 13+ &middot; Apache-2.0</p>
-    <h1 class="mt-4 text-[1.75rem] md:text-[2.6rem] leading-[1.15] font-bold max-w-[24ch]">
-      Your phone's AI is waiting on its slowest cores.
-    </h1>
-    <p class="mt-5 max-w-[62ch] text-dim text-[0.9375rem] md:text-base">
-      ENTITY reads the silicon, derives the thread width, pins the cluster - then ships the
-      three-arm ablation that proves which decision earned the speedup, and what it cost in watts.
+  <section class="relative mx-auto max-w-[1200px] px-4 md:px-6 pt-16 md:pt-24 pb-10 overflow-hidden">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <p class="eyebrow hero-rise" style="animation-delay:40ms">
+      Fully offline &middot; arm64-v8a &middot; Android 13+ &middot; Apache-2.0
     </p>
-    <div class="mt-7 flex flex-wrap gap-3">
+    <h1
+      class="hero-rise mt-5 text-[2rem] md:text-[3.25rem] leading-[1.08] font-bold max-w-[18ch] tracking-tight"
+      style="animation-delay:90ms"
+    >
+      Your phone's AI is waiting on its
+      <span class="text-accent-ink">slowest cores.</span>
+    </h1>
+    <p
+      class="hero-rise mt-6 max-w-[60ch] text-dim text-[0.9375rem] md:text-lg leading-relaxed"
+      style="animation-delay:150ms"
+    >
+      ENTITY reads the silicon, derives the thread width, and pins the fast cluster -
+      <span class="text-fg">up to 68% faster decode and 42% less battery</span>, fully offline. And
+      it proves which decision earned it.
+    </p>
+    <div class="hero-rise mt-8 flex flex-wrap gap-3" style="animation-delay:210ms">
       <a href={withBase("/apps/#download")} class="btn btn-solid">Download ENTITY</a>
-      <a href={withBase("/evidence/")} class="btn">See the evidence</a>
+      <a href={withBase("/leaderboard/")} class="btn">See the benchmarks</a>
     </div>
 
-    <div class="mt-12">
+    <div class="hero-rise mt-14" style="animation-delay:280ms">
       <A1Race />
     </div>
   </section>
 
   <MetricsStrip />
 
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-12" aria-label="Headline numbers">
-    <dl class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-outline border border-outline rounded-[10px] overflow-hidden">
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-14" aria-label="Headline numbers">
+    <p class="eyebrow" data-reveal>Measured, not marketed</p>
+    <dl
+      class="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-px bg-outline border border-outline rounded-[10px] overflow-hidden"
+      data-stagger="90"
+    >
       {
         stats.map((s) => (
-          <div class="bg-surface p-5 flex flex-col">
-            <dd class="order-1 text-[1.75rem] font-bold leading-none">{s.n}</dd>
-            <dt class="order-2 text-[0.8125rem] mt-1">{s.what}</dt>
+          <div class="bg-surface p-5 md:p-6 flex flex-col" data-reveal>
+            <dd
+              class="order-1 text-[2rem] md:text-[2.5rem] font-bold leading-none text-accent-ink tabular-nums"
+              data-count-to={s.to}
+              data-count-decimals={s.dec}
+              data-count-prefix={s.pre}
+              data-count-suffix={s.suf}
+            >
+              {s.n}
+            </dd>
+            <dt class="order-2 text-[0.8125rem] mt-2">{s.what}</dt>
             <dd class="order-3 mt-3 text-[0.6875rem] text-dim leading-relaxed">{s.cond}</dd>
           </div>
         ))
@@ -108,97 +134,152 @@ const decisions = [
     </dl>
   </section>
 
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
-    <h2 class="text-xl md:text-2xl font-bold">What ENTITY decides at runtime</h2>
-    <p class="mt-2 text-dim max-w-[68ch] text-[0.875rem]">
-      Not a wrapper with a theme. An inference-optimization layer over llama.cpp, with a Kotlin UI
-      and a C++ JNI path, making hardware-aware decisions per phone.
-    </p>
-    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8">
+    <div class="flex flex-wrap items-end justify-between gap-4" data-reveal>
+      <div>
+        <p class="eyebrow">See it running</p>
+        <h2 class="mt-2 text-xl md:text-2xl font-bold">A real assistant, fully on the phone</h2>
+      </div>
+      <a href={withBase("/apps/")} class="btn !py-1.5 !px-3 text-[0.75rem]">All screens &rarr;</a>
+    </div>
+    <div class="mt-6" data-reveal>
+      <Carousel id="home-shots" label="ENTITY chat screenshots">
+        {
+          highlights.map((s, i) => (
+            <figure class="carousel__slide">
+              <div class="showcase">
+                <PhoneFrame class="w-full max-w-[22rem]">
+                  <Shot slug={s.slug} alt={s.title} eager={i === 0} />
+                </PhoneFrame>
+                <figcaption>
+                  <p class="eyebrow">{`Screen ${String(i + 1).padStart(2, "0")}`}</p>
+                  <h3 class="mt-3 text-xl md:text-3xl font-bold leading-tight">{s.title}</h3>
+                  <p class="mt-4 text-[0.9375rem] md:text-lg text-dim leading-relaxed">{s.cap}</p>
+                </figcaption>
+              </div>
+            </figure>
+          ))
+        }
+      </Carousel>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8">
+    <p class="eyebrow" data-reveal>How it works</p>
+    <h2 class="mt-2 text-xl md:text-2xl font-bold" data-reveal>Three moves, per phone</h2>
+    <ol class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4" data-stagger="90">
       {
-        decisions.map((c) => (
-          <div class="card p-5">
-            <h3 class="text-[0.8125rem] font-bold tracking-[0.08em] uppercase">{c.t}</h3>
+        steps.map((c, i) => (
+          <li class="card lift p-6 min-w-0" data-reveal>
+            <span class="ghost-index !text-[2.5rem] block text-accent-line" style="-webkit-text-stroke:1px var(--accent-line)">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <h3 class="mt-3 text-[0.875rem] font-bold tracking-[0.04em] uppercase">{c.t}</h3>
             <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">{c.d}</p>
-          </div>
+          </li>
         ))
       }
-      <a
-        href={withBase("/optimizations/")}
-        class="card p-5 no-underline flex items-center justify-between gap-2 hover:border-dim transition-colors duration-150"
-      >
-        <span class="text-[0.8125rem] font-bold tracking-[0.08em] uppercase"
-          >Every lever, with sources</span
-        >
-        <span aria-hidden="true" class="text-dim">&rarr;</span>
-      </a>
-    </div>
+    </ol>
   </section>
 
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
-    <h2 class="text-xl md:text-2xl font-bold">The mechanism, not just the number</h2>
-    <p class="mt-2 mb-6 text-dim max-w-[68ch] text-[0.875rem]">
-      The gain that generalises across every SoC measured is the thread count. This is why.
-    </p>
-    <A2Straggler />
-  </section>
-
-  <MetricsStrip />
-
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
-    <div class="card p-6 min-w-0">
-      <p class="microlabel">Why offline, why watts</p>
-      <h2 class="mt-2 text-lg font-bold">Built for where the network is not</h2>
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-6 md:p-8 min-w-0" data-reveal>
+      <p class="eyebrow">Why watts</p>
+      <h2 class="mt-2 text-lg md:text-xl font-bold">Built for where the network is not</h2>
       <p class="mt-3 text-[0.875rem] text-dim leading-relaxed">
-        Dead roaming zones. Disaster and grid-down scenarios. Rural gaps. An assistant is most
-        needed exactly where a cloud one stops working - and there, battery is survival. That is
-        why ENTITY's headline axis is tokens per watt, measured per pass from battery current and
-        voltage, and hidden whenever charging would fake it.
+        Dead zones, grid-down, rural gaps - where a cloud assistant stops working and battery is
+        survival. So the headline axis is tokens per watt, measured per pass from battery current
+        and voltage, and hidden whenever charging would fake it.
       </p>
-      <p class="mt-3 text-[0.875rem] text-dim leading-relaxed">
-        The same 128 tokens cost 86 J naive and 50 J optimized on the reference phone - not from
-        drawing fewer watts, but from finishing in 11.8 s instead of 19.9 s.
+      <p class="mt-3 text-[0.875rem] text-fg leading-relaxed">
+        The same 128 tokens cost 86 J naive and 50 J optimized - by finishing in 11.8 s instead
+        of 19.9 s.
       </p>
     </div>
-    <div class="card p-6 min-w-0">
-      <p class="microlabel">Live board</p>
-      <h2 class="mt-2 text-lg font-bold">How much tuning earns, per chip</h2>
+    <div class="card p-6 md:p-8 min-w-0 flex flex-col" data-reveal>
+      <div class="flex items-center justify-between gap-3">
+        <p class="eyebrow">Live board</p>
+        <span class="text-[0.6875rem] text-dim">{groups.length} devices &middot; {socCount} SoCs</span>
+      </div>
+      <h2 class="mt-2 text-lg md:text-xl font-bold">How much tuning earns, per chip</h2>
       <ol class="mt-4 space-y-2">
         {
           top3.map((g, i) => (
-            <li class="flex items-center gap-3 text-[0.8125rem]">
-              <span class="text-dim w-4">{i + 1}</span>
+            <li class="flex items-center gap-3 text-[0.8125rem] border-b border-outline pb-2 last:border-0">
+              <span class="text-accent-ink font-bold w-5">{i + 1}</span>
               <span class="min-w-0 flex-1 truncate">
                 {g.primary.device}
                 <span class="text-dim"> &middot; {g.primary.soc.name}</span>
               </span>
               {g.primary.provisional && (
-                <span class="chip !text-[0.625rem]" title="single pass - provisional">
-                  1 run
-                </span>
+                <span class="chip !text-[0.6875rem]" title="single pass - provisional">1 run</span>
               )}
-              <span class="font-bold">{fmtX(g.primary.multiplier)}</span>
+              <span class="font-bold text-[0.9375rem]">{fmtX(g.primary.multiplier)}</span>
             </li>
           ))
         }
       </ol>
-      <p class="mt-3 text-[0.6875rem] text-dim">
-        Tuning multiplier: optimized decode over the naive 8-thread default, one row per device
-        and quantization. Single-pass rows are provisional.
-      </p>
-      <a href={withBase("/leaderboard/")} class="btn mt-4">Open the leaderboard</a>
+      <a href={withBase("/leaderboard/")} class="btn mt-auto pt-4 self-start">Open the leaderboard</a>
     </div>
   </section>
 
-  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
-    <div class="card p-6 md:p-8 border-dashed">
-      <p class="microlabel">Why trust any of this</p>
-      <p class="mt-3 text-[0.9375rem] md:text-base max-w-[68ch] leading-relaxed">
-        This project's own ablation disproved its own headline claim - the v2.0.0 "+121% from
-        big-core affinity" - and published the correction instead of burying it. The falsifications
-        are the evidence that the surviving numbers were actually checked.
+  <div class="mt-6">
+    <Marquee items={marqueeWords} dur="50s" />
+  </div>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-14">
+    <div
+      class="card p-6 md:p-10 text-center flex flex-col items-center"
+      data-reveal
+      style="background:linear-gradient(180deg,var(--accent-wash),transparent)"
+    >
+      <p class="eyebrow">Two apps, one runtime</p>
+      <h2 class="mt-3 text-xl md:text-2xl font-bold max-w-[22ch]">
+        Install ENTITY, or reproduce every number with ENTITY Bench
+      </h2>
+      <p class="mt-3 max-w-[52ch] text-[0.875rem] text-dim">
+        Direct APKs with SHA-256. arm64-v8a, Android 13+, Apache-2.0. No account, no telemetry
+        you did not switch on.
       </p>
-      <a href={withBase("/journey/")} class="btn mt-5">Read the withdrawn claims</a>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <a href={withBase("/apps/#download")} class="btn btn-solid">Download the APKs</a>
+        <a href={withBase("/evidence/")} class="btn">Read the evidence</a>
+      </div>
+      <p class="mt-6 text-[0.75rem] text-dim max-w-[60ch]">
+        This project's own ablation disproved its own v2.0.0 headline and published the
+        correction instead of burying it -
+        <a href={withBase("/journey/")}>the withdrawn claims</a> are why the surviving numbers can
+        be trusted.
+      </p>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pb-16" aria-label="About the builder">
+    <div
+      class="card p-6 md:p-8 grid gap-6 md:gap-8 md:grid-cols-[auto_1fr] md:items-center"
+      data-reveal
+    >
+      <span
+        class="grid place-items-center w-16 h-16 md:w-20 md:h-20 rounded-2xl border border-accent-line bg-accent-wash text-accent-ink text-2xl md:text-3xl font-bold shrink-0"
+        aria-hidden="true"
+      >
+        KV
+      </span>
+      <div class="min-w-0">
+        <p class="eyebrow">Who built this</p>
+        <h2 class="mt-2 text-xl md:text-2xl font-bold">Kamalesh VS</h2>
+        <p class="mt-3 max-w-[64ch] text-dim text-[0.9375rem] leading-relaxed">
+          A solo build for the Arm Create: AI Optimization Challenge 2026. I build things that
+          sense, move and fly - embedded systems, computer vision and on-device AI. ENTITY is that
+          same instinct pointed at the CPU already in your pocket: measure it, tune to it, and
+          prove every number.
+        </p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <a href="https://kkjj.me" class="btn btn-solid">kkjj.me</a>
+          <a href="https://github.com/kkjjkamal123" class="btn">GitHub</a>
+          <a href="https://kkjj.me/#contact" class="btn">Get in touch</a>
+        </div>
+      </div>
     </div>
   </section>
 </Layout>

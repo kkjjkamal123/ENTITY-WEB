@@ -30,6 +30,16 @@
   --fill: #d6d6d6;
   --on-fill: #121212;
 
+  /* brand accent: ENTITY teal, matching the shipped app (ui-redesign DESIGN-NOTES).
+     Chrome only - links, buttons, focus, decoration, glow. The data figures keep
+     their validated ordinal/status palette so a measured chart is never recoloured. */
+  --accent: #19c39a;
+  --accent-ink: #33d6ae; /* >=4.5:1 text on bg and surface */
+  --on-accent: #05201a; /* dark ink on the teal fill */
+  --accent-wash: rgba(25, 195, 154, 0.12);
+  --accent-line: rgba(25, 195, 154, 0.4);
+  --accent-glow: rgba(25, 195, 154, 0.22);
+
   /* status: marks/badges (>=3:1 on surface) */
   --ok: #358756;
   --warn: #bd8830;
@@ -50,6 +60,11 @@
   --arm-4: #4a4a4a; /* efficiency / LITTLE-pinned, recessive */
 
   --grid: #2a2a2a; /* hairline gridlines, one step off surface */
+
+  /* type: readable sans for prose + headings, JetBrains Mono kept for the
+     technical register (data tables, code, labels, chips, numbers). */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 
   /* motion tokens - single source, consumed by CSS and JS */
   --dur-fast: 150ms;
@@ -76,6 +91,12 @@
     --ok: #17693f;
     --warn: #ad7800;
     --danger: #a61e3c;
+    --accent: #0f8f6f;
+    --accent-ink: #0c7a5f;
+    --on-accent: #ffffff;
+    --accent-wash: rgba(16, 163, 127, 0.1);
+    --accent-line: rgba(16, 163, 127, 0.32);
+    --accent-glow: rgba(16, 163, 127, 0.14);
     --ok-ink: #17693f;
     --warn-ink: #7e5800;
     --danger-ink: #a61e3c;
@@ -102,6 +123,12 @@
   --ok: #17693f;
   --warn: #ad7800;
   --danger: #a61e3c;
+  --accent: #0f8f6f;
+  --accent-ink: #0c7a5f;
+  --on-accent: #ffffff;
+  --accent-wash: rgba(16, 163, 127, 0.1);
+  --accent-line: rgba(16, 163, 127, 0.32);
+  --accent-glow: rgba(16, 163, 127, 0.14);
   --ok-ink: #17693f;
   --warn-ink: #7e5800;
   --danger-ink: #a61e3c;
@@ -131,6 +158,12 @@
   --color-warn-ink: var(--warn-ink);
   --color-danger-ink: var(--danger-ink);
   --color-grid: var(--grid);
+  --font-sans: var(--font-sans);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-onaccent: var(--on-accent);
+  --color-accent-wash: var(--accent-wash);
+  --color-accent-line: var(--accent-line);
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
     monospace;
   --radius-card: var(--radius);
@@ -148,19 +181,39 @@ html {
 }
 
 body {
-  font-family: var(--font-mono);
-  background: var(--bg);
+  font-family: var(--font-sans);
+  background: transparent; /* html holds --bg; .atmosphere paints between them */
   color: var(--fg);
-  font-size: 15px;
-  line-height: 1.7;
-  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 @media (min-width: 768px) {
   body {
-    font-size: 16px;
+    font-size: 17px;
   }
+}
+
+/* keep the technical register in JetBrains Mono */
+code,
+kbd,
+samp,
+pre,
+.data-table,
+.microlabel,
+.eyebrow,
+.chip,
+.marquee,
+.wordmark,
+.num,
+.mono,
+.ghost-index {
+  font-family: var(--font-mono);
+}
+.num,
+.data-table {
+  font-variant-numeric: tabular-nums;
 }
 
 ::selection {
@@ -169,7 +222,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--fg);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -183,9 +236,12 @@ body {
     text-decoration: underline;
     text-decoration-color: var(--dim);
     text-underline-offset: 3px;
+    transition: text-decoration-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
   }
-  a:hover {
-    text-decoration-color: var(--fg);
+  a:not(.btn):not(.no-underline):hover {
+    text-decoration-color: var(--accent);
+    color: var(--accent-ink);
   }
   hr {
     border: 0;
@@ -193,10 +249,36 @@ body {
   }
 }
 
+/* theme-conditional display: pick the asset that suits the active theme
+   (covers manual toggle via [data-theme] and the OS default). */
+.only-light {
+  display: none;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .only-dark {
+    display: none;
+  }
+  :root:not([data-theme]) .only-light {
+    display: initial;
+  }
+}
+:root[data-theme="light"] .only-dark {
+  display: none;
+}
+:root[data-theme="light"] .only-light {
+  display: initial;
+}
+:root[data-theme="dark"] .only-dark {
+  display: initial;
+}
+:root[data-theme="dark"] .only-light {
+  display: none;
+}
+
 /* micro-label: the app's uppercase section register (DEVICE UNDER TEST) */
 .microlabel {
-  font-size: 0.6875rem;
-  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--dim);
   font-weight: 500;
@@ -210,6 +292,23 @@ body {
   border: 1px solid var(--outline);
   border-radius: var(--radius);
   min-width: 0;
+  transition: border-color var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+/* opt-in hover lift for interactive/content cards */
+.lift:hover,
+a.card:hover {
+  border-color: var(--accent-line);
+  transform: translateY(-3px);
+  box-shadow: 0 1px 0 var(--accent-wash), 0 14px 34px -20px var(--accent-glow),
+    0 8px 20px -16px rgba(0, 0, 0, 0.5);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lift:hover,
+  a.card:hover {
+    transform: none;
+  }
 }
 
 /* chip: the app's solid = live / outline = not present states */
@@ -255,17 +354,31 @@ body {
     color var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out);
 }
+.btn {
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
 .btn:hover {
-  border-color: var(--dim);
+  border-color: var(--accent-line);
+  color: var(--accent-ink);
+}
+.btn:active {
+  transform: translateY(1px);
 }
 .btn-solid {
-  background: var(--fill);
-  color: var(--on-fill);
-  border-color: var(--fill);
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
 }
 .btn-solid:hover {
-  opacity: 0.9;
-  border-color: var(--fill);
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px -8px var(--accent-glow);
+  filter: brightness(1.06);
 }
 
 /* prose measure */
@@ -324,6 +437,43 @@ figcaption {
   line-height: 1.6;
 }
 
+/* disclosure: collapse dense secondary prose behind a native, no-JS toggle */
+.disclosure {
+  border: 1px solid var(--outline);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.disclosure > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  font-weight: 500;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.disclosure > summary:hover {
+  color: var(--accent-ink);
+}
+.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.disclosure > summary::after {
+  content: "+";
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--accent-ink);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.disclosure[open] > summary::after {
+  content: "\2212"; /* minus */
+}
+.disclosure__body {
+  padding: 0 1.25rem 1.25rem;
+}
+
 /* status text helpers - colour never the only signal; pair with text/shape */
 .t-ok {
   color: var(--ok-ink);
@@ -345,17 +495,382 @@ figcaption {
   }
 }
 
+/* zoomable images + lightbox (progressive enhancement; no JS = normal image) */
+.js .zoomable {
+  cursor: zoom-in;
+}
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background: rgba(8, 8, 8, 0.86);
+  backdrop-filter: blur(6px);
+  animation: lightbox-in var(--dur-base) var(--ease-out);
+}
+.lightbox[hidden] {
+  display: none;
+}
+@keyframes lightbox-in {
+  from {
+    opacity: 0;
+  }
+}
+.lightbox__img {
+  max-width: 96vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8);
+}
+.lightbox__img--matte {
+  background: #fff;
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+}
+.lightbox__close {
+  position: absolute;
+  top: clamp(0.75rem, 2vw, 1.25rem);
+  right: clamp(0.75rem, 2vw, 1.25rem);
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.lightbox__close:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lightbox {
+    animation: none;
+  }
+}
+
 /* skip link */
 .skip-link {
   position: absolute;
   left: -9999px;
   top: 0;
   z-index: 100;
-  background: var(--fill);
-  color: var(--on-fill);
+  background: var(--accent);
+  color: var(--on-accent);
   padding: 0.5rem 1rem;
   border-radius: 0 0 var(--radius-sm) 0;
 }
 .skip-link:focus {
   left: 0;
+}
+
+/* ---- scroll reveal --------------------------------------------------------
+   Invisible-safe. Elements hide ONLY after <html> gets the `js` class (set by
+   the inline head script before first paint). No JS -> `js` never set -> nothing
+   is ever hidden. Under reduced motion the hidden state is lifted too. The
+   resting state is always visible; motion is the enhancement, not a gate. */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+  will-change: opacity, transform;
+}
+.js [data-reveal="fade"] {
+  transform: none;
+}
+.js [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* hero entrance: pure CSS so the LCP headline never waits on JS. Resting state
+   is visible; reduced motion drops the animation entirely. */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-rise {
+  animation: hero-rise var(--dur-slow) var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise {
+    animation: none;
+  }
+}
+
+/* local hero glow, stronger than the ambient atmosphere; sits behind hero text */
+.hero-glow {
+  position: absolute;
+  z-index: -1;
+  top: -20%;
+  right: -8%;
+  width: 40rem;
+  height: 40rem;
+  max-width: 92%;
+  pointer-events: none;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    var(--accent-glow),
+    color-mix(in srgb, var(--accent-glow) 40%, transparent) 38%,
+    transparent 66%
+  );
+}
+
+/* ambient brand glow, fixed behind all content (body is transparent, html holds
+   the base colour). z-index:-1 keeps it under static content, above the canvas. */
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+      44rem 30rem at 78% -6%,
+      var(--accent-glow),
+      transparent 62%
+    ),
+    radial-gradient(36rem 26rem at 4% 2%, var(--accent-wash), transparent 58%);
+}
+
+/* big outlined section index numerals - structure + rhythm without more text */
+.ghost-index {
+  font-weight: 800;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--outline);
+  font-size: clamp(3.25rem, 8vw, 6.5rem);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* eyebrow micro-label with a leading teal tick */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 500;
+}
+.eyebrow::before {
+  content: "";
+  width: 1.4em;
+  height: 1px;
+  background: var(--accent);
+  flex: none;
+}
+
+/* marquee ticker: continuous scroll, freezes to a static scroll under reduced
+   motion so no information is lost. */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 6%,
+    #000 94%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 6%,
+    #000 94%,
+    transparent
+  );
+}
+.marquee__track {
+  display: flex;
+  flex: none;
+  min-width: 100%;
+  animation: marquee var(--marquee-dur, 40s) linear infinite;
+}
+.marquee:hover .marquee__track {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    -webkit-mask-image: none;
+    mask-image: none;
+    overflow-x: auto;
+  }
+  .marquee__track {
+    animation: none;
+  }
+  .marquee__track + .marquee__track {
+    display: none;
+  }
+}
+
+/* header scrolled state */
+.site-header {
+  transition: box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+.site-header[data-scrolled] {
+  border-color: var(--accent-line);
+  box-shadow: 0 6px 24px -18px var(--accent-glow), 0 1px 0 var(--outline);
+}
+
+/* nav link with a growing teal underline; active is pinned open */
+.nav-link {
+  position: relative;
+  color: var(--dim);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.nav-link:hover {
+  color: var(--fg);
+}
+.nav-link[aria-current="page"] {
+  color: var(--fg);
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.2rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.nav-link:hover::after,
+.nav-link[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+/* wordmark: teal on hover */
+.wordmark {
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.wordmark:hover {
+  color: var(--accent-ink);
+}
+
+/* ---- carousel: scroll-snap first, JS layers arrows + dots ------------------
+   Every slide is reachable by swipe/scroll with zero JS. Nothing is hidden. */
+.carousel__viewport {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 1rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 0.25rem;
+}
+.carousel__viewport::-webkit-scrollbar {
+  display: none;
+}
+/* showcase: one full-width slide at a time; each slide holds its own image and
+   caption so a no-JS swipe still shows the right text beside the right image. */
+.carousel__slide {
+  scroll-snap-align: center;
+  flex: none;
+  width: 100%;
+}
+.showcase {
+  display: grid;
+  gap: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  grid-template-columns: minmax(0, 22rem);
+  justify-items: center;
+}
+@media (min-width: 768px) {
+  .showcase {
+    grid-template-columns: minmax(0, 22rem) minmax(0, 32rem);
+    gap: clamp(2rem, 5vw, 4rem);
+    justify-items: stretch;
+  }
+}
+/* controls sit below the caption, aligned under the text column (same tracks
+   as .showcase). Explicit [hidden] rule keeps them hidden with no JS. */
+.carousel__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 22rem);
+  justify-content: center;
+}
+.carousel__controls[hidden] {
+  display: none;
+}
+@media (min-width: 768px) {
+  .carousel__controls {
+    grid-template-columns: minmax(0, 22rem) minmax(0, 32rem);
+    column-gap: clamp(2rem, 5vw, 4rem);
+  }
+}
+.carousel__dots {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.carousel__dots button {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 0;
+  padding: 0;
+  background: var(--outline);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    width var(--dur-fast) var(--ease-out);
+}
+.carousel__dots button[aria-current="true"] {
+  background: var(--accent);
+  width: 20px;
+}
+.carousel__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--outline);
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.carousel__arrow:hover {
+  border-color: var(--accent-line);
+  color: var(--accent-ink);
 }

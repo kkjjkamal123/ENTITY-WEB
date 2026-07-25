@@ -11,11 +11,11 @@ const { class: cls } = Astro.props;
 
 <div
   class:list={[
-    "rounded-[22px] border border-outline bg-surface p-1.5 shadow-none",
+    "rounded-[24px] border border-[#3a3a40] bg-[#161619] p-2 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.7)]",
     cls,
   ]}
 >
-  <div class="rounded-[16px] overflow-hidden border border-outline/60">
+  <div class="rounded-[17px] overflow-hidden border border-black/50">
     <slot />
   </div>
 </div>

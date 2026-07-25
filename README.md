@@ -4,7 +4,7 @@ The public site for ENTITY, an offline on-device LLM runtime for Arm Android pho
 animated explainers of how the optimization works, a live device leaderboard over the
 contributed benchmark dataset, and the evidence and falsification record.
 
-Live: https://kkjjkamal123.github.io/ENTITY/
+Live: https://kkjjkamal123.github.io/ENTITY-WEB/
 
 ## Stack
 
@@ -16,7 +16,7 @@ the leaderboard island (including the inlined data snapshot) is ~12 KB gzipped.
 
 ```bash
 npm install
-npm run dev        # http://localhost:4321/ENTITY/
+npm run dev        # http://localhost:4321/ENTITY-WEB/
 npm run build      # static build into dist/
 npm run preview    # serve dist/ at the deploy subpath
 ```
@@ -75,11 +75,30 @@ Design tokens are the shipped app's own palette (ENTITY v3.4.0, which retired pu
 #FFF for halation). Status hues were validated with a palette validator against both themes;
 see the comments in `src/styles/global.css`.
 
+### v1.1.0 - product-first redesign
+
+The site was reworked into a product page with benchmarks. Highlights:
+
+- **Type**: a readable system sans for prose and headings; JetBrains Mono kept only for the
+  technical register (data tables, code, labels, chips, numbers).
+- **Accent**: the app's own teal (`#19C39A` dark / `#10A37F` light) for chrome - links,
+  buttons, focus, decoration, ambient glow. Measured figures keep their validated data palette.
+- **Motion**: scroll reveals, a hero entrance, a live-metrics ticker, count-up stat numbers,
+  and a keyword marquee. All are invisible-safe (nothing is hidden until `<html>` gets the `js`
+  class) and fully lifted under `prefers-reduced-motion`; verify with
+  `node scripts/qa-shots.mjs --nojs` and `--rm`.
+- **Components**: `Carousel.astro` (one-at-a-time screenshot showcase, scroll-snap first,
+  JS-enhanced arrows/dots), `Marquee.astro`, a click-to-enlarge image lightbox in `Layout`.
+- **Structure**: primary nav trimmed to Overview / Leaderboard / Apps / Evidence; the deep
+  technical pages moved to the footer; the leaderboard leads with a decluttered 7-column table
+  and collapses its caveats into disclosures.
+
 ## Deploying
 
 GitHub Pages via `.github/workflows/deploy.yml` on push to `main` (Pages source:
 GitHub Actions). `astro.config.mjs` sets `site` and `base` for the project subpath; internal
 links go through `withBase()` in `src/lib/url.ts`.
 
-APKs are distributed as GitHub Release assets on this repository
-(`releases/latest/download/<file>`), not committed to the tree.
+APKs are distributed as GitHub Release assets on the source repository
+(`ENTITY---Arm-Create-AI-Optimization-Challenge/releases/latest/download/<file>`), not
+committed to this tree.

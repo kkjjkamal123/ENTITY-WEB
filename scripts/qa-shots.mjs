@@ -7,7 +7,7 @@
 import { chromium } from "playwright";
 import { mkdir } from "node:fs/promises";
 
-const BASE = process.env.QA_BASE ?? "http://localhost:4321/ENTITY";
+const BASE = process.env.QA_BASE ?? "http://localhost:4321/ENTITY-WEB";
 const args = process.argv.slice(2);
 const rm = args.includes("--rm");
 const nojs = args.includes("--nojs");

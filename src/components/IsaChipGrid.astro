@@ -17,7 +17,7 @@ const { chips, legend = false, size = "md" } = Astro.props;
       chips.map(([label, on]) => (
         <li>
           <span
-            class:list={["chip", size === "sm" && "!text-[0.625rem] !px-2"]}
+            class:list={["chip", size === "sm" && "!text-[0.6875rem] !px-2"]}
             data-on={on || undefined}
             data-dashed={!on || undefined}
           >

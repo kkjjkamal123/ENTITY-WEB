@@ -27,6 +27,7 @@ const src = (ext: string) => withBase(`/shots/${slug}.${ext}`);
     height={h}
     loading={eager ? "eager" : "lazy"}
     decoding="async"
-    class:list={["block w-full h-auto", cls]}
+    tabindex="0"
+    class:list={["zoomable block w-full h-auto", cls]}
   />
 </picture>

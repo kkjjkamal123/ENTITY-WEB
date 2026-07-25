@@ -220,6 +220,32 @@ Source: brief + `releases/RELEASE-v3.4.0.md` rationale (halation). Dark: bg #121
 #1E1E1E, fg #E4E4E4, dim #A0A0A0, outline #333333, fill #D6D6D6, on_fill #121212. Light: bg
 #F1F0EC, surface #F9F8F5, fg #1F1F1D, dim #5C5C58, outline #D6D4CE, fill #1F1F1D, on_fill #F9F8F5.
 
+## Numbers derived from the live snapshot (src/data/leaderboard.json)
+
+Computed at build/display time from the verbatim dataset dump of 2026-07-24 (22 rows, 9 SoCs,
+checksum-verified against the database). Presented with the honesty rules applied:
+- Live tuning-multiplier spread quoted as "about 1.3x-3.8x / up to 4.27x": Tecno Spark 10
+  (MT6765H) 3.43 -> 4.58 = 1.34x (1 run, provisional); vivo I2301 (MT6886) 4.32 -> 16.0 =
+  3.70x (1 run); Samsung SM-G781B / Galaxy S20 FE 5G (SM8250) 5.34 -> 22.8 = 4.27x (3 runs).
+  All labelled provisional where single-pass; high-variance rows excluded.
+- A2 preset rows: A015 id 15 (naive 10.4 -> threads 18.1, 4 thr), Pixel 10 id 5 (7.43 -> 21.5,
+  2 thr, 3 runs), Galaxy S22 Ultra id 8 (5.08 -> 18.2, 2 thr, 3 runs). S23 excluded per the
+  dataset's own RSD rule (naive 6.72 +- 5.95).
+- A3 device flag sets: real cpu_flags rows (A015, SM-S911B, Pixel 10, TECNO KI5q). Variant
+  list and required features: llama.cpp ggml/src/CMakeLists.txt Android GGML_CPU_ALL_VARIANTS
+  block (android_armv8.0_1 ... android_armv9.2_2).
+- A8 full-precision inputs: Pixel 10 id 5 (tok/W 5.172 -> 5.009 = -3.2%), S23 id 7
+  (3.7995 -> 3.8083 = +0.2%); CMF and OPPO CPH2729 arms from the 2026-07-18 export tables.
+- Power sanity gate (site rule, documented in README): power_valid rows are additionally
+  flagged when arms disagree on watts by more than 4x or any arm reads under 0.8 W during
+  decode - extends CONTRIBUTED-DATA.md's exclusion of CPH2737 power to a post-fix row
+  (id 24: threads_only 0.52 W, naive 3.86 W, tok/W 63) that would otherwise top the tok/W
+  sort. Flagged, not dropped: raw values stay in the detail panel.
+- SoC marketing names: repo-documented (Dimensity 7300/8300, Tensor G5, Snapdragon 8 Gen
+  1/2) plus unambiguous public mappings (SM8250 = Snapdragon 865; MT6833 = Dimensity 700;
+  MT6765H = Helio G37, per Geekbench's Tecno Spark 10 KI5q listing). MT6886 ships under
+  several Dimensity names (7200 / 7020 / 7350 per PhoneDB/PhonesData) and stays raw.
+
 ## Supabase
 
 Project `ksfuiykmfqhpjpsvvcpe`, table `public.bench_results`, PostgREST + anon key (safe to

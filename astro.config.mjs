@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   site: 'https://kkjjkamal123.github.io',
-  base: '/ENTITY',
+  base: '/ENTITY-WEB',
   trailingSlash: 'always',
   integrations: [sitemap()],
   vite: {

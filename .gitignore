@@ -3,3 +3,4 @@ dist/
 .astro/
 qa/
 BUILD-STATE.md
+_*.mjs

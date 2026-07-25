@@ -17,7 +17,6 @@ import {
   processRows,
   sortGroups,
   vendorOf,
-  topoSummary,
   dateOf,
   esc,
   fmt,
@@ -85,40 +84,14 @@ function filtered(): Group[] {
   });
 }
 
-const CHIP_FLAGS = ["dotprod", "i8mm", "sve2", "sme"];
-const ALL_FLAGS = ["dotprod", "i8mm", "sve", "sve2", "sme", "sme2", "fp16"];
-
-const isaChips = (flags: string[], all = false) =>
-  (all ? ALL_FLAGS : CHIP_FLAGS)
-    .map((f) => {
-      const on = flags.includes(f);
-      return `<span class="chip !text-[0.5625rem] !px-1.5" ${on ? "data-on" : "data-dashed"}>${f}</span>`;
-    })
-    .join("");
-
-const topoStrip = (freqs: number[], caps: number[] | null, fast: number) => {
-  const n = freqs.length;
-  const w = freqs.map((f, i) => (caps ? caps[i] : f));
-  const max = Math.max(...w);
-  const order = [...Array(n).keys()].sort((a, b) => w[a] - w[b]);
-  const fastSet = new Set(order.slice(n - fast));
-  return `<span class="inline-flex items-end gap-[2px] h-4" role="img" aria-label="${esc(topoSummary(freqs))}">${freqs
-    .map((f, i) => {
-      const h = Math.max(25, Math.round((w[i] / max) * 100));
-      const solid = fastSet.has(i);
-      return `<span class="inline-block w-[5px] rounded-[1px] ${solid ? "bg-fill" : "border border-dim/70"}" style="height:${h}%"></span>`;
-    })
-    .join("")}</span>`;
-};
-
 const runsChip = (d: Derived) =>
   d.provisional
-    ? `<span class="chip !text-[0.5625rem] !px-1.5 !border-[color:var(--warn)] t-warn" title="single pass - provisional; two back-to-back 1-pass runs have disagreed by up to 19.6%">1 run</span>`
+    ? `<span class="chip !text-[0.6875rem] !px-1.5 !border-[color:var(--warn)] t-warn" title="single pass - provisional; two back-to-back 1-pass runs have disagreed by up to 19.6%">1 run</span>`
     : `<span class="text-dim">${d.row.runs_per_arm}</span>`;
 
 const varChip = (d: Derived) =>
   d.highVariance
-    ? `<span class="chip !text-[0.5625rem] !px-1.5 !border-[color:var(--danger)] t-danger" title="decode relative SD above 25% on: ${esc(d.variantArms.join(", "))} - excluded from aggregates">high sd</span>`
+    ? `<span class="chip !text-[0.6875rem] !px-1.5 !border-[color:var(--danger)] t-danger" title="decode relative SD above 25% on: ${esc(d.variantArms.join(", "))} - excluded from aggregates">high sd</span>`
     : "";
 
 const tokwCell = (d: Derived) => {
@@ -130,39 +103,33 @@ const tokwCell = (d: Derived) => {
   return fmt(a?.tok_per_w, 2);
 };
 
-const modelShort = (file: string) =>
-  file.replace(/\.gguf$/i, "").replace(/-Instruct/i, "").replace(/_/g, "_");
-
 function rowHtml(g: Group): string {
   const d = g.primary;
   const r = d.row;
   const naive = d.naive;
   const opt = d.optimized;
   const more = g.others.length
-    ? `<span class="text-dim text-[0.625rem]">+${g.others.length} more</span>`
+    ? `<span class="text-dim text-[0.6875rem]">+${g.others.length} more</span>`
     : "";
+  const socSub = `${d.soc.name !== d.soc.raw ? `${esc(d.soc.raw)} &middot; ` : ""}${esc(r.quantization)}${r.kleidiai_accelerated ? " &middot; KleidiAI" : ""}`;
   return `
   <tbody data-key="${esc(`${r.device_model}|${r.quantization}`)}" class="lb-group border-b border-outline">
     <tr class="hover:bg-surface/70 transition-colors duration-150">
       <td class="!py-2.5">
         <button type="button" class="lb-expand text-left w-full cursor-pointer" aria-expanded="false">
           <span class="font-medium">${esc(d.device)}</span> ${more}
-          <span class="block text-[0.625rem] text-dim">Android ${esc(r.android_release)} &middot; <span class="whitespace-nowrap">${dateOf(r.received_at)}</span></span>
+          <span class="block text-[0.6875rem] text-dim">Android ${esc(r.android_release)} &middot; <span class="whitespace-nowrap">${dateOf(r.received_at)}</span></span>
         </button>
       </td>
-      <td>${esc(d.soc.name)}${d.soc.name !== d.soc.raw ? `<span class="block text-[0.625rem] text-dim">${esc(d.soc.raw)}</span>` : ""}</td>
-      <td>${topoStrip(r.max_freqs_mhz, r.cpu_capacities, r.fast_cores)}<span class="block text-[0.625rem] text-dim">${esc(topoSummary(r.max_freqs_mhz))}</span></td>
-      <td><span class="inline-flex flex-wrap gap-0.5 max-w-[10rem]">${isaChips(r.cpu_flags)}</span></td>
-      <td>${esc(modelShort(r.model_file))}<span class="block text-[0.625rem] text-dim">${esc(r.quantization)}${r.kleidiai_accelerated ? " &middot; KleidiAI" : ""}</span></td>
+      <td>${esc(d.soc.name)}<span class="block text-[0.6875rem] text-dim">${socSub}</span></td>
       <td class="num">${fmt(naive?.decode_tok_s)} ${varChip(d)}</td>
       <td class="num">${fmt(opt?.decode_tok_s)}</td>
-      <td class="num"><span class="text-[0.9375rem] font-bold">${fmtX(d.multiplier)}</span></td>
-      <td class="num">${fmt(opt?.prompt_tok_s, 0)}</td>
+      <td class="num"><span class="text-[0.9375rem] font-bold text-accent-ink">${fmtX(d.multiplier)}</span></td>
       <td class="num">${tokwCell(d)}</td>
       <td class="num">${runsChip(d)}</td>
     </tr>
     <tr class="lb-detail" hidden>
-      <td colspan="11" class="!p-0">${detailHtml(g)}</td>
+      <td colspan="7" class="!p-0">${detailHtml(g)}</td>
     </tr>
   </tbody>`;
 }
@@ -187,7 +154,7 @@ function armRow(d: Derived, a: Arm): string {
       : fmt(a.tok_per_w, 2)
     : `<span class="text-dim">-</span>`;
   return `<tr>
-    <td>${armName[a.arm] ?? esc(a.arm)}${a.slow_cluster ? ` <span class="text-dim text-[0.625rem]">LITTLE</span>` : ""}</td>
+    <td>${armName[a.arm] ?? esc(a.arm)}${a.slow_cluster ? ` <span class="text-dim text-[0.6875rem]">LITTLE</span>` : ""}</td>
     <td class="num">${a.threads}</td>
     <td>${a.pinned ? "pinned" : "scheduler"}</td>
     <td class="num">${fmt(a.decode_tok_s)}${a.decode_sd ? ` <span class="text-dim">&plusmn;${fmt(a.decode_sd, 2)}</span>` : ""}</td>
@@ -258,7 +225,7 @@ function cardHtml(g: Group): string {
       <span><span class="text-dim">tok/W</span> ${tokwCell(d)}</span>
       <span><span class="text-dim">runs</span> ${runsChip(d)} ${varChip(d)}</span>
     </div>
-    <button type="button" class="lb-expand btn !py-1 !px-2.5 !text-[0.625rem] mt-3" aria-expanded="false">details</button>
+    <button type="button" class="lb-expand btn !py-1 !px-2.5 !text-[0.6875rem] mt-3" aria-expanded="false">details</button>
     <div class="lb-detail -mx-4 mt-3" hidden>${detailHtml(g)}</div>
   </div>`;
 }

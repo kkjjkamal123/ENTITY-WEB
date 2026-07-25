@@ -44,7 +44,10 @@ const og = `${site}${withBase(ogImage ?? `/og${path.replace(/\/$/, "") || "/inde
     <meta name="twitter:image" content={og} />
     <meta name="generator" content={Astro.generator} />
     <script is:inline>
-      /* theme before first paint: stored choice wins, else OS preference */
+      /* runs before first paint. (1) mark JS present so reveal styles may hide
+         elements - without this class nothing is ever hidden, so no-JS renders
+         fully visible. (2) theme: stored choice wins, else OS preference. */
+      document.documentElement.classList.add("js");
       (function () {
         try {
           var t = localStorage.getItem("entity-theme");
@@ -55,11 +58,176 @@ const og = `${site}${withBase(ogImage ?? `/og${path.replace(/\/$/, "") || "/inde
     </script>
   </head>
   <body class="min-h-screen flex flex-col">
+    <div class="atmosphere" aria-hidden="true"></div>
     <a href="#main" class="skip-link">Skip to content</a>
     <Header path={path} />
     <main id="main" class="flex-1 w-full">
       <slot />
     </main>
     <Footer />
+
+    <div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="Enlarged image">
+      <button type="button" class="lightbox__close" data-lightbox-close aria-label="Close enlarged image">&times;</button>
+      <img class="lightbox__img" alt="" />
+    </div>
+
+    <script>
+      /* click any .zoomable image to enlarge it; Esc or backdrop closes. */
+      const lb = document.getElementById("lightbox");
+      const lbImg = lb?.querySelector<HTMLImageElement>(".lightbox__img");
+      if (lb && lbImg) {
+        let lastFocus: HTMLElement | null = null;
+        const openLb = (img: HTMLImageElement) => {
+          lastFocus = document.activeElement as HTMLElement;
+          lbImg.src = img.currentSrc || img.src;
+          lbImg.alt = img.alt;
+          lbImg.classList.toggle(
+            "lightbox__img--matte",
+            lbImg.src.includes("/plots/")
+          );
+          lb.hidden = false;
+          document.body.style.overflow = "hidden";
+          lb.querySelector<HTMLButtonElement>("[data-lightbox-close]")?.focus();
+        };
+        const closeLb = () => {
+          lb.hidden = true;
+          lbImg.removeAttribute("src");
+          document.body.style.overflow = "";
+          lastFocus?.focus();
+        };
+        document.addEventListener("click", (e) => {
+          const t = e.target as HTMLElement;
+          const img = t.closest<HTMLImageElement>("img.zoomable");
+          if (img) {
+            openLb(img);
+            return;
+          }
+          if (t.closest("[data-lightbox-close]") || t === lb) closeLb();
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && !lb.hidden) closeLb();
+          const t = e.target as HTMLElement;
+          if (
+            (e.key === "Enter" || e.key === " ") &&
+            t.matches("img.zoomable")
+          ) {
+            e.preventDefault();
+            openLb(t as HTMLImageElement);
+          }
+        });
+      }
+    </script>
+
+    <script>
+      /* Scroll reveal + header state. Reduced motion: reveal everything at once,
+         skip the observer. Stagger comes from per-child transition-delay. */
+      const rm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const items = document.querySelectorAll<HTMLElement>("[data-reveal]");
+
+      if (rm) {
+        items.forEach((el) => el.classList.add("is-in"));
+      } else {
+        document
+          .querySelectorAll<HTMLElement>("[data-stagger]")
+          .forEach((group) => {
+            const step = Number(group.dataset.stagger) || 70;
+            group
+              .querySelectorAll<HTMLElement>(":scope > [data-reveal]")
+              .forEach((el, i) => {
+                el.style.transitionDelay = i * step + "ms";
+              });
+          });
+
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                (e.target as HTMLElement).classList.add("is-in");
+                io.unobserve(e.target);
+              }
+            }
+          },
+          /* threshold 0 so a section taller than the viewport still reveals
+             (a large-threshold observer can never fire for such a target) */
+          { threshold: 0, rootMargin: "0px 0px -12% 0px" }
+        );
+        items.forEach((el) => io.observe(el));
+      }
+
+      /* count-up numbers: animate to the value on first view. No JS / reduced
+         motion keeps the server-rendered final value. */
+      const fmtN = (v: number, dec: number) =>
+        v.toLocaleString("en-US", {
+          minimumFractionDigits: dec,
+          maximumFractionDigits: dec,
+        });
+      const counters = document.querySelectorAll<HTMLElement>("[data-count-to]");
+      const runCount = (el: HTMLElement) => {
+        const to = parseFloat(el.dataset.countTo!);
+        const dec = parseInt(el.dataset.countDecimals || "0");
+        const pre = el.dataset.countPrefix || "";
+        const suf = el.dataset.countSuffix || "";
+        /* the authored, sourced string is the source of truth - the tween only
+           ever shows intermediate values, and the exact string is restored at
+           the end. A stalled rAF (background tab, throttling) must never leave
+           a wrong number on screen. */
+        const finalText = el.dataset.countFinal!;
+        const settle = () => (el.textContent = finalText);
+        if (rm) {
+          settle();
+          return;
+        }
+        const dur = 1100;
+        const t0 = performance.now();
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          settle();
+        };
+        const step = (t: number) => {
+          const p = Math.min(1, (t - t0) / dur);
+          if (p < 1) {
+            el.textContent = pre + fmtN(to * (1 - Math.pow(1 - p, 3)), dec) + suf;
+            requestAnimationFrame(step);
+          } else finish();
+        };
+        requestAnimationFrame(step);
+        setTimeout(finish, dur + 120); // safety net if rAF never completes
+        document.addEventListener("visibilitychange", finish, { once: true });
+      };
+      if (rm) {
+        counters.forEach(runCount);
+      } else if (counters.length) {
+        const cio = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                runCount(e.target as HTMLElement);
+                cio.unobserve(e.target);
+              }
+            }
+          },
+          { threshold: 0.4 }
+        );
+        counters.forEach((c) => {
+          const pre = c.dataset.countPrefix || "";
+          const suf = c.dataset.countSuffix || "";
+          c.textContent = pre + "0" + suf;
+          cio.observe(c);
+        });
+      }
+
+      /* header gains a shadow once the page has scrolled a little */
+      const header = document.querySelector<HTMLElement>(".site-header");
+      if (header) {
+        const onScroll = () => {
+          if (window.scrollY > 8) header.setAttribute("data-scrolled", "");
+          else header.removeAttribute("data-scrolled");
+        };
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+      }
+    </script>
   </body>
 </html>

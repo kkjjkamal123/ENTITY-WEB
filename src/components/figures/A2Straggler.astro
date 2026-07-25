@@ -159,7 +159,7 @@ const pct = (ms: number, axis: number) => `${((ms / axis) * 100).toFixed(2)}%`;
                 <div class="space-y-1">
                   {rows.map((r) => (
                     <div class="grid grid-cols-[2.75rem_1fr] items-center gap-2">
-                      <span class="flex items-center gap-1 text-[0.625rem] text-dim">
+                      <span class="flex items-center gap-1 text-[0.6875rem] text-dim">
                         <span
                           class:list={[
                             "inline-block w-2 h-2 rounded-[2px]",
@@ -218,7 +218,7 @@ const pct = (ms: number, axis: number) => `${((ms / axis) * 100).toFixed(2)}%`;
               <div class="mt-2 space-y-1">
                 {rows.map((r) => (
                   <div class="grid grid-cols-[2.75rem_1fr] items-center gap-2">
-                    <span class="flex items-center gap-1 text-[0.625rem] text-dim">
+                    <span class="flex items-center gap-1 text-[0.6875rem] text-dim">
                       <span
                         class:list={[
                           "inline-block w-2 h-2 rounded-[2px]",
@@ -237,7 +237,7 @@ const pct = (ms: number, axis: number) => `${((ms / axis) * 100).toFixed(2)}%`;
                           style={`width:${pct(r.t2, naiveStep)}; background: var(--arm-3)`}
                         />
                       ) : (
-                        <span class="absolute inset-0 flex items-center pl-2 text-[0.5625rem] text-dim">
+                        <span class="absolute inset-0 flex items-center pl-2 text-[0.6875rem] text-dim">
                           unused
                         </span>
                       )}
