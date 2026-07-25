@@ -241,7 +241,10 @@ const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
             <ul class="mt-3 space-y-3 text-[0.8125rem] leading-relaxed">
               <li>
                 <strong>Thread-count tuning pays on every SoC measured: 1.34x to 4.25x, and no
-                device has regressed</strong> (22 rows, 9 SoCs). It holds at both ends of the
+                device has regressed</strong> (22 rows, 9 SoCs). That range is the thread step
+                alone - naive to threads-only. The multiplier column in the table above is the full
+                naive-to-optimized ratio, so it reads slightly higher (4.27x on the same device);
+                the gap between the two is what pinning contributed. It holds at both ends of the
                 range - on SVE2 flagship silicon and on an all-Cortex-A53 Helio G37 reporting no
                 Arm ISA extensions at all. The widest multiplier is a Snapdragon 865, which has no
                 i8mm: the lever is scheduling, not a kernel.
