@@ -102,35 +102,63 @@ same regression: 116 vs 86 - quote per page with its own source, never mixed.)
 
 ## Contributed dataset (leaderboard editorial)
 
-Source: `benchmarks/CONTRIBUTED-DATA.md`; raw export `results/contributed_ablation_q4_0_20260723.csv`.
-As of 2026-07-23: 12 rows, 5 SoCs, all bench app 1.5.0. Devices/topologies (MHz):
-Nothing A015 x3 (Dimensity 7300 MT6878, dotprod fp16, 4x2000+4x2500);
+Source: `benchmarks/CONTRIBUTED-DATA.md`; raw export `results/contributed_ablation_q4_0_20260723.csv`
+(that CSV, and `plots/contributed_multidevice.png` built from it, stop at 12 rows / 5 SoCs and are
+NOT the source for the counts below - those were read from the table itself).
+As of 2026-07-25: 22 rows, 9 SoCs, bench app 1.5.0 through 2.1.1. Devices/topologies (MHz):
+Nothing A015 x6 (Dimensity 7300 MT6878, dotprod fp16, 4x2000+4x2500);
 Pixel 10 (Tensor G5, dotprod i8mm sve sve2 fp16, 2x2246+5x3052+1x3782);
 Galaxy S23 (SM8550, dotprod i8mm fp16, 3x2016+4x2803+1x3360);
 Galaxy S22 Ultra (SM8450, dotprod i8mm fp16, 4x1785+3x2496+1x2995);
-OPPO CPH2737 x6 (Dimensity 8300 MT6897, dotprod i8mm fp16, 4x2200+3x3200+1x3350).
+Galaxy S20 FE 5G / SM-G781B (Snapdragon 865 SM8250, dotprod fp16, 4x1804+3x2419+1x2841);
+OPPO CPH2737 x7 (Dimensity 8300 MT6897, dotprod i8mm sve sve2 fp16, 4x2200+3x3200+1x3350);
+vivo I2301 (MT6886, dotprod i8mm sve sve2 fp16, 6x2000+2x2800);
+OPPO CPH2553 x3 (Dimensity 700 MT6833, dotprod fp16, 6x2000+2x2203);
+TECNO KI5q (Helio G37 MT6765H, NO ISA flags at all, 4x2301+4x1800).
 
 Established:
-1. Thread-count tuning pays on every SoC: 1.65x to 3.58x, none regressed. Flat 4+4 ~1.8x,
-   widest-spread flagships ~3.5x; CPH2737 at 1.65x (narrow prime gap behaves flat).
-2. Pinning axis (threads-only vs optimized): A015 Q8_0 +4.9/-5.4/+10.9; A015 Q8_0 repeat
-   -4.8/+0.1/-4.9; Pixel 10 +29.3/+33.5/-3.2; A015 Q4_0 -8.5/+7.5/-14.9; S23 +1.7/+1.1/+0.2;
-   S22U -0.5/-2.1/+2.2 (decode/watts/tok-per-W). Median +0.6% decode, -1.5% tok/W, positive on
-   3 of 6 rows. Ranges: decode -8.5% to +29.3%, tok/W -14.9% to +10.9%.
+1. Thread-count tuning pays on every SoC: 1.34x to 4.25x, none regressed. Best clean rows for the
+   four SoCs added after 2026-07-23 (naive -> threads-only -> optimized decode tok/s):
+   SM8250 5.34 -> 22.70 -> 22.80 (4.25x thread, +0.4% pin); MT6886 4.32 -> 16.40 -> 16.00 (3.80x,
+   -2.4%); MT6833 7.75 -> 13.90 -> 14.00 (1.79x, +0.7%); MT6765H 3.43 -> 4.59 -> 4.58 (1.34x,
+   -0.2%). Largest multiplier is the SM8250, which has NO i8mm - the lever is scheduling.
+   Heterogeneity: clock spread alone does not predict it. MT6833 1.10x spread -> 1.79x;
+   MT6878 1.25x -> ~1.8x; MT6765H 1.28x -> 1.34x; MT6886 1.40x -> 3.80x; MT6897 1.52x -> 1.65x;
+   SM8250 1.57x -> 4.25x. MT6765H breaks it (all 8 cores are Cortex-A53, so no strong core to
+   strand); MT6897 breaks it (prime only 4.7% above its big cluster in practice). cpu_capacities
+   is the better candidate, present on 9 of 22 rows (bench v2.0.0+), untested against this table.
+2. Pinning axis (threads-only vs optimized, decode/watts/tok-per-W): A015 Q8_0 +4.9/-5.4/+10.9;
+   A015 Q8_0 repeat -4.8/+0.1/-4.9; Pixel 10 +29.3/+33.5/-3.2; A015 Q4_0 -8.5/+7.5/-14.9;
+   S23 +1.7/+1.1/+0.2; S22U -0.5/-2.1/+2.2; A015 Q4_0 app2.0.0 -0.6/-3.6/+3.0;
+   A015 Q4_0 app2.1.0 +6.0/-11.7/+20.1; A015 Q4_0 app2.1.1 +24.0/-7.9/+34.4;
+   SM8250 +0.4/-3.8/+4.4; MT6886 -2.4/+1.8/-4.2; MT6833 +0.7/+3.9/-3.1; MT6765H -0.2/-1.9/+1.7;
+   CPH2737 app2.1.1 +1.8/excluded/excluded. Median +0.7% decode (positive 9 of 15); +2.0% tok/W
+   (positive 9 of 14, one excluded on implausible power). Ranges: decode -8.5% to +29.3%,
+   tok/W -14.9% to +34.4%. Both extremes real: Pixel 10 pays +33.5% power for +29.3% decode;
+   A015 app2.1.1 gets +24.0% decode for 7.9% LESS power. Framing: device-dependent in both speed
+   and energy, sign not predictable from the spec sheet. NOT "pinning earns nothing" and NOT
+   "pinning earns a multiplier".
 3. Falsified prediction: rule counted cores within 10% of top clock; primes sit 17-20% above
    their big cluster; count collapsed to 1 -> clamped to 2 on Tensor G5 (3782), SM8550 (3360),
-   SM8450 (2995); D7300 (2500) passes 4. Prefill inherited it (n_pp = n_gen): D7300 prefills
-   139 tok/s vs SM8550's 111. CMF is flat 4+4; OPPO CPH2729 prime only 4.3% above big cluster
-   (2304 vs 2208) - both dev phones structurally immune. Fixed v3.5.0.
+   SM8450 (2995), SM8250 (2841); MT6886 (2800) passes 2 naturally; D7300 (2500) passes 4. Prefill
+   inherited it (n_pp = n_gen): D7300 prefills 139 tok/s vs SM8550's 111. CMF is flat 4+4; OPPO
+   CPH2729 prime only 4.3% above big cluster (2304 vs 2208) - both dev phones structurally
+   immune. Fixed v3.5.0.
 CPH2737 details: NOT a Snapdragon (mt6897 = Dimensity 8300). Its power rows invalid
 (EXTRA_VOLTAGE reported in volts, not mV; underreported by 1e6; fixed chat v3.6.0 / bench
 v2.1.0; rows 11-12 corrected to power_valid=false; throughput unaffected). Each run uploaded
 twice (ids 9=14, 10=13, 11=12) - dedupe required in any aggregate. Clean unplugged run:
 18.1 -> 29.9 -> 30.5 tok/s (1.65x thread count, +2.0% pinning). Efficiency-arm oddity: 30.5
-identical to optimized - single pass, flagged as a lead, not a finding.
+identical to optimized - single pass, flagged as a lead, not a finding. The fix did NOT fully fix
+it: row 24 (app 2.1.1, unplugged) carries power_valid=true yet reads 0.52/0.66 W and 63.4/50.1
+tok/W while decoding at 33.3 tok/s - not physical. Excluded by the under-0.8 W rule. Its
+throughput is the fastest decode in the dataset (18.3 -> 32.7 -> 33.3) and is trustworthy.
 Reading rules: never quote power/tok-per-W from charging runs; 1-pass rows sd=0, noise floor up
 to 19.6% between back-to-back single passes; check RSD - S23 naive 6.72 +- 5.95 (88.5% RSD) is
-noise; never compare across models (Q8_0 rows are Qwen2.5-0.5B, Q4_0 rows are Llama-3.2-1B).
+noise; never compare across models (Q8_0 rows are Qwen2.5-0.5B, Q4_0 rows are Llama-3.2-1B);
+discard implausible power even where power_valid=true (arms disagreeing >4x, or decode under
+0.8 W); kleidiai_accelerated means "quantization is eligible", NOT "Arm kernels ran" - the
+MT6765H row has empty cpu_flags and still reports true.
 Known non-issues: duration_min=0 on ablations; naive reports pinned:true (mask = all 8 = every
 core); 3-arm rows lack the optional efficiency arm.
 SM8550 decode width datum: 23.8 tok/s on 2 threads vs 6.72 on 8 (`docs/OPTIMIZATIONS.md` section 2).

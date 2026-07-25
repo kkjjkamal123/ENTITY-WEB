@@ -177,9 +177,12 @@ const maxW = 7;
 
   <p slot="caption">
     On the axis that isolates pinning (threads-only to optimized), the contributed dataset's
-    median is <strong>+0.6% decode and -1.5% tok/W, positive on only 3 of 6 rows</strong>. That is
-    why v3.5.0 made core placement a user setting instead of an assumption, and why the app
-    reports the measurement from the user's own phone.
+    median is <strong>+0.7% decode and +2.0% tok/W, positive on 9 of 15 rows</strong> - but the
+    range runs <strong>-8.5% to +29.3%</strong> and both ends are real: one phone pays 33.5% more
+    power to go 29.3% faster, another goes 24.0% faster on 7.9% <em>less</em> power. Nothing
+    knowable before running it says which you have. That is why v3.5.0 made core placement a user
+    setting instead of an assumption, and why the app reports the measurement from the user's own
+    phone.
   </p>
 </Fig>
 

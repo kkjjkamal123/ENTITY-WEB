@@ -75,6 +75,23 @@ Design tokens are the shipped app's own palette (ENTITY v3.4.0, which retired pu
 #FFF for halation). Status hues were validated with a palette validator against both themes;
 see the comments in `src/styles/global.css`.
 
+### v1.2.0 - hosted, live, and reconciled with the dataset
+
+- **Hosted** at `/ENTITY-WEB` on GitHub Pages, deployed by Actions on push to `main`.
+- **The live fetch actually resolves.** `public.bench_results` had row-level security on with only
+  an insert policy for `anon`, so every browser fetch returned `[]` and the page silently served
+  the snapshot. With the select policy applied the leaderboard reads live and says so; the nightly
+  refresh workflow, which had been failing its empty-rows guard, now commits real snapshots.
+- **Editorial reconciled with the table.** The prose beside the leaderboard still claimed 12 rows
+  across 5 SoCs and "positive on only 3 of 6 rows" while the table below it rendered 22 rows across
+  9 SoCs - the page contradicted itself. Every hardcoded dataset figure on every page was
+  recomputed: thread-count range 1.34x-4.25x, pinning median +0.7% decode / +2.0% tok/W over 15
+  and 14 rows. The "pinning is not an energy lever" framing was retired: one device gains 24.0%
+  decode on 7.9% less power, so the honest claim is that the sign is device-dependent and
+  unpredictable. Source map updated in `CONTENT-SOURCES.md`; the same corrections landed in the
+  source repository's `BENCHMARKS.md`, `CONTRIBUTED-DATA.md` and `JOURNEY.md`.
+- **APK links** point at the source repository's release assets instead of a repo that never existed.
+
 ### v1.1.0 - product-first redesign
 
 The site was reworked into a product page with benchmarks. Highlights:

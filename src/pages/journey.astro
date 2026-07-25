@@ -51,7 +51,7 @@ const entries: Entry[] = [
   {
     claim: "Pinning earns energy",
     broke:
-      "Isolating the right axis. The optimized arm showed 2.4x-3.4x better tokens per watt than naive, and pinning looked like the thing earning it - but optimized-vs-naive changes two things. On the axis that isolates pinning, threads-only vs optimized: median +0.6% decode, -1.5% tokens per watt, positive on only 3 of 6 rows. The Pixel 10 is the clean demonstration: +29.3% faster, +33.5% more power, tok/W falls 3.2%.",
+      "Isolating the right axis. The optimized arm showed 2.4x-3.4x better tokens per watt than naive, and pinning looked like the thing earning it - but optimized-vs-naive changes two things. On the axis that isolates pinning, threads-only vs optimized, the median across 15 rows is only +0.7% decode and +2.0% tokens per watt. The Pixel 10 shows the cost clearly: +29.3% faster, +33.5% more power, tok/W falls 3.2%. The wider dataset later corrected this correction too - a Dimensity 7300 gets +24.0% decode at 7.9% less power, so pinning can earn energy; it just cannot be assumed to.",
     cost: "The energy story had to be re-attributed from pinning to thread count - the same correction as entry 1, on a different metric, weeks later.",
     replaced:
       "Core placement became a user setting rather than an assumption, and the app now reports the measurement from the user's own phone instead of asserting a default.",
@@ -139,8 +139,8 @@ const entries: Entry[] = [
     <div class="card p-6">
       <p class="microlabel">What actually generalised</p>
       <ul class="mt-3 space-y-2.5 text-[0.875rem] leading-relaxed">
-        <li><span class="font-bold">Thread-count tuning is the lever.</span> It pays on every SoC measured, 1.65x to 3.58x, and it is the only thing in this project that has never regressed on a new device.</li>
-        <li><span class="font-bold">Pinning is a speed lever with a power cost</span> - device-dependent in sign, roughly neutral-to-negative on energy. Correctly a setting, not a default.</li>
+        <li><span class="font-bold">Thread-count tuning is the lever.</span> It pays on every SoC measured - nine of them, 1.34x to 4.25x - and it is the only thing in this project that has never regressed on a new device. It holds on SVE2 flagship silicon and on an all-Cortex-A53 phone with no Arm ISA extensions at all.</li>
+        <li><span class="font-bold">Pinning is device-dependent in both speed and energy</span>, and the sign cannot be predicted from the spec sheet: median +0.7% decode, but the range runs -8.5% to +29.3% and both extremes are real measurements. Correctly a setting, not a default.</li>
         <li><span class="font-bold">The two inference phases want different thread widths</span>, and conflating them costs prefill badly on any chip with a prime core.</li>
         <li><span class="font-bold">Frequency cannot rank cores; cpu_capacity can.</span> An A55 at 2.0 GHz and an A78 at 2.5 GHz are 25% apart in clock and roughly 3x apart in throughput.</li>
       </ul>

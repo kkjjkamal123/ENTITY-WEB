@@ -264,10 +264,11 @@ const pct = (ms: number, axis: number) => `${((ms / axis) * 100).toFixed(2)}%`;
   </div>
 
   <p slot="caption">
-    Published finding: thread-count tuning pays on every SoC in the dataset, 1.65x to 3.58x, and
-    no device regressed - a flat 4+4 gets about 1.8x, the widest-spread flagships about 3.5x
-    (benchmarks/CONTRIBUTED-DATA.md, as of 2026-07-23). Rows contributed since widen the live,
-    still-provisional spread to about 1.3x-3.8x; see the leaderboard. The Galaxy S23 is not a
+    Published finding: thread-count tuning pays on every SoC in the dataset - nine of them now,
+    <strong>1.34x to 4.25x</strong>, and none has regressed (benchmarks/CONTRIBUTED-DATA.md). The
+    biggest multiplier is a Snapdragon 865 with no i8mm, and the smallest is an all-Cortex-A53
+    Helio G37 with no Arm ISA extensions at all: relative core strength drives the gain, not the
+    kernel and not the clock spread alone. The Galaxy S23 is not a
     preset here because its naive arm measured 6.72 &plusmn; 5.95 tok/s (88.5% relative SD), which
     the dataset's own reading rules exclude.
   </p>
