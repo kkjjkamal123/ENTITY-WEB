@@ -1,5 +1,5 @@
 {
- "fetched_at": "2026-07-26T06:16:15.917Z",
+ "fetched_at": "2026-07-27T06:42:37.442Z",
  "source": "supabase:public.bench_results",
  "rows": [
   {
@@ -2749,6 +2749,117 @@
     981,
     981,
     981,
+    1024
+   ]
+  },
+  {
+   "id": 28,
+   "received_at": "2026-07-27T06:17:05.911061+00:00",
+   "submission_id": "0576dca8-5d17-4de1-b0fe-5292474c634c",
+   "app_version": "2.1.1",
+   "app_version_code": 11,
+   "run_type": "ablation",
+   "run_ts": 1785133003679,
+   "device_manufacturer": "samsung",
+   "device_model": "SM-M366B",
+   "soc": "s5e8835 / s5e8835",
+   "android_release": "16",
+   "android_sdk": 36,
+   "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "armeabi"
+   ],
+   "cpu_flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "max_freqs_mhz": [
+    2002,
+    2002,
+    2002,
+    2002,
+    2400,
+    2400,
+    2400,
+    2400
+   ],
+   "fast_cores": 4,
+   "little_cores": 4,
+   "model_file": "Llama-3.2-1B-Instruct-Q4_0",
+   "quantization": "Q4_0",
+   "kleidiai_accelerated": true,
+   "runs_per_arm": 1,
+   "duration_min": 0,
+   "start_temp_c": 39.2,
+   "charging": false,
+   "power_valid": true,
+   "arms": [
+    {
+     "arm": "naive",
+     "watts": 5.243421600000003,
+     "passes": 1,
+     "pinned": true,
+     "threads": 8,
+     "ttft_ms": 6038.612689829376,
+     "decode_sd": 0,
+     "prompt_sd": 0,
+     "tok_per_w": 1.802258281119335,
+     "decode_tok_s": 9.45,
+     "prompt_tok_s": 86.3,
+     "slow_cluster": false
+    },
+    {
+     "arm": "threads_only",
+     "watts": 4.792654065934061,
+     "passes": 1,
+     "pinned": false,
+     "threads": 4,
+     "ttft_ms": 6584.021388692302,
+     "decode_sd": 0,
+     "prompt_sd": 0,
+     "tok_per_w": 3.3801730267053425,
+     "decode_tok_s": 16.2,
+     "prompt_tok_s": 78.5,
+     "slow_cluster": false
+    },
+    {
+     "arm": "optimized",
+     "watts": 4.209148952380951,
+     "passes": 1,
+     "pinned": true,
+     "threads": 4,
+     "ttft_ms": 5749.1298527443105,
+     "decode_sd": 0,
+     "prompt_sd": 0,
+     "tok_per_w": 3.9437901076439768,
+     "decode_tok_s": 16.6,
+     "prompt_tok_s": 90,
+     "slow_cluster": false
+    },
+    {
+     "arm": "adpf",
+     "watts": 4.581613142857141,
+     "passes": 1,
+     "pinned": false,
+     "threads": 4,
+     "ttft_ms": 5619.780870595204,
+     "decode_sd": 0,
+     "prompt_sd": 0,
+     "tok_per_w": 3.6013516387178925,
+     "decode_tok_s": 16.5,
+     "prompt_tok_s": 92.1,
+     "slow_cluster": false
+    }
+   ],
+   "cpu_capacities": [
+    252,
+    252,
+    252,
+    252,
+    1024,
+    1024,
+    1024,
     1024
    ]
   }
