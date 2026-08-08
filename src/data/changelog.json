@@ -1,6 +1,11 @@
 {
   "chat": [
     {
+      "version": "3.7.0",
+      "date": "2026-08-08",
+      "title": "predicting a model before downloading it"
+    },
+    {
       "version": "3.6.2",
       "date": "2026-07-24",
       "title": "the assistant had no idea it was ENTITY"

@@ -27,7 +27,19 @@ const faq: { q: string; a: string }[] = [
   },
   {
     q: "Which models can I use?",
-    a: "Pick one from the in-app catalog - sized for your phone, tagged for whether it reaches Arm's KleidiAI kernels - or import any runnable GGUF through the document picker. A 1B model is a good starting point; a 3B-class model needs more free memory and may receive a smaller Auto context window.",
+    a: "Pick one from the in-app catalog - seven vendors, 0.36B to 7B, each sized against the memory your phone reports free right now and tagged for whether it reaches Arm's KleidiAI kernels - or import any runnable GGUF through the document picker. A 1B model is a good starting point; a 3B-class model needs more free memory and may receive a smaller Auto context window.",
+  },
+  {
+    q: "How can the app recommend a model it has not downloaded?",
+    a: "It measures the two things inference is bound by, in about 60 milliseconds, with no model present. Decode reads essentially every weight once per token, so tokens per second tracks memory bandwidth divided by file size - measured with a 32 MB copy, too large for any phone's last-level cache, so it reads DRAM rather than SRAM. Prompt processing is a GEMM and tracks integer throughput on the performance cores, measured with a dependency-chained multiply-accumulate loop. Both are scaled against one device that was measured properly with llama-bench. It is an estimate and the screen says so: it cannot see thermal headroom, other apps' memory pressure, or the vendor's scheduler. It exists to keep you off a model your phone cannot serve, not to replace the benchmark.",
+  },
+  {
+    q: "Why does the app show free memory instead of my phone's RAM?",
+    a: "Because free memory is what a model has to fit into. A 6 GB phone with a browser and background apps resident often has under 2 GB to give, and sizing against 6 GB recommends models into memory that is already spoken for. Both figures are displayed so the number never looks like a wrong spec. The trade-off is that the verdict moves depending on what else is running - which is honest, since the phone really does have less room when it is busy.",
+  },
+  {
+    q: "What do the token details on a reply mean?",
+    a: "Long-press any answer. Prompt tokens are what the model read after the chat template was applied; generated tokens are what it wrote. The two rates are reported separately and deliberately never averaged: reading a prompt is compute-bound and happens in batches, while each generated token re-reads every weight and is bandwidth-bound. Timings cover model execution only, so markdown rendering and list redraws cannot show up as a slow model - which also makes these numbers comparable with the benchmark screen's pp and tg figures.",
   },
   {
     q: "What does Auto mode change?",

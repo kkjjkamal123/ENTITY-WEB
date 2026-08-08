@@ -63,6 +63,12 @@ const benchShots: { slug: any; title: string; cap: string }[] = [
         <div class="flex gap-2"><dt class="shrink-0">sha-256</dt><dd class="break-all min-w-0">5f638f3f7ec4eec376d1a2db03ca1bff64706d23b757792afa0bcb6d384fede6</dd></div>
         <div class="flex gap-2"><dt class="shrink-0">requires</dt><dd>arm64-v8a, Android 13+</dd></div>
       </dl>
+      <p class="mt-3 text-[0.6875rem] text-dim leading-relaxed">
+        v3.7.0 - the device probe, per-answer token accounting and the free-memory sizing rule - is
+        tagged in source and its notes are in the changelog. The download above is still v3.6.2,
+        because a signed APK for 3.7.0 has not been published yet and this card describes the file
+        you actually get.
+      </p>
     </div>
     <div class="card p-6 min-w-0">
       <div class="flex items-center gap-3">
@@ -107,7 +113,41 @@ adb install -r apk/ENTITY-v24-entity-identity-prompt-20260724-release.apk</code>
       <li>Auto mode plus manual temperature, top-k, top-p, length, context and threads.</li>
       <li>Live stats bar and seven-series graph: tokens, rate, TTFT, temperature, watts, CPU, memory.</li>
       <li>In-app three-arm benchmark with history, CSV export and core-placement verdict.</li>
+      <li>A recommended model for this phone, from a 60 ms probe that needs no model downloaded.</li>
+      <li>Model cards report the KleidiAI coverage measured from the file's own tensor table.</li>
+      <li>Long-press any reply for its token accounting: prompt read, tokens written, both rates.</li>
     </ul>
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-[64rem]">
+      <div class="card p-5">
+        <h3 class="text-[0.9375rem] font-bold">Before you download</h3>
+        <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+          The catalog spans seven vendors and 0.36B to 7B. Each entry is judged against memory the
+          phone reports free right now - not installed RAM, which counts capacity already spent on
+          everything else open - and, once the probe has run, carries an estimated generation rate
+          and time to first token. The reasoning is on the
+          <a href={withBase("/optimizations/")}>optimizations page</a>.
+        </p>
+      </div>
+      <div class="card p-5">
+        <h3 class="text-[0.9375rem] font-bold">What the file actually contains</h3>
+        <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+          A GGUF named Q4_0 is not uniformly Q4_0. ENTITY parses the tensor table and reports the
+          fraction of weights that reach Arm's kernels, naming the largest tensor that does not -
+          on the reference Llama-3.2-1B-Q4_0 that is 76%, and the missing quarter includes the
+          output projection.
+        </p>
+      </div>
+      <div class="card p-5">
+        <h3 class="text-[0.9375rem] font-bold">What that answer cost</h3>
+        <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+          Prompt and generated tokens are reported apart, never as one rate. They are produced by
+          different regimes - the prompt goes through in batches and is compute-bound, each
+          generated token re-reads every weight and is bandwidth-bound. Averaging them is why speed
+          claims about local models are so often incomparable. Timings cover model execution only,
+          so a slow redraw cannot pass as a slow model.
+        </p>
+      </div>
+    </div>
     <div class="mt-6 card p-4 md:p-8" data-reveal>
       <Carousel id="chat-shots" label="ENTITY chat screenshots">
         {

@@ -71,12 +71,28 @@ const entries: Entry[] = [
     cost: "Nothing but embarrassment - caught before it shipped anywhere that mattered.",
     replaced: "Read the device's own report, not the spec sheet you remember.",
   },
+  {
+    claim: "More KleidiAI coverage will be faster",
+    broke:
+      "Reading the tensor table instead of the file_type label showed the shipped Llama-3.2-1B-Q4_0 is only 76% Q4_0 - token_embd.weight is Q6_K, and because Llama 3.2 ties its embeddings that tensor is also the output projection, the largest matmul in the model. Rebuilding it to Q8_0 took coverage to 97% for 8.2% more file. The prediction was written down first: prefill faster, decode slower. Measured on the reference phone, three reps, pinned: prefill 125.69 to 121.84 tok/s, decode 17.99 to 15.94. Slower on both.",
+    cost: "A day, and a recommendation that would have shipped a worse model to every user if the prediction had been trusted instead of tested.",
+    replaced:
+      "llama.cpp computes logits only for a prompt's last position, so the output projection runs once per prefill rather than once per token - promoting it buys nothing there, and in decode a heavier tensor is a straight loss. Coverage is not throughput. The rebuilt file is published as a negative result and kept out of the catalog; the app now reports the measured fraction instead of asserting a boolean from a filename.",
+  },
+  {
+    claim: "The device probe's anchor constants can be reasoned about",
+    broke:
+      "Running the probe on the phone it was calibrated against. Two denominators had been filled in by derivation rather than measurement: memory bandwidth from what decode actually achieves (14 GB/s, discounted to 6.4), and integer throughput from what four Cortex-A78s ought to sustain (2.6 ops/ns). The probe reads 26.2 GB/s - a linear arraycopy sees near-peak DRAM while decode walks many separate tensors - and the true integer rate is 1.042, because a dependency-chained scalar MAC runs nowhere near a core's peak. Decode estimates came out 4.1x too fast, prefill 2.5x too slow. A 360M model was projected at 251 tok/s.",
+    cost: "Nothing shipped, but the feature was complete, reviewed, and passing 72 unit tests in that state - the tests assert internal consistency, and both wrong constants were perfectly consistent with themselves.",
+    replaced:
+      "Both constants now carry the reading they came from, marked as the probe's own output on a known device rather than a datasheet or a derivation. The rule underneath: a ratio is only dimensionless if both sides were measured the same way. Substituting a physically-related quantity for one side rescales everything downstream, and no amount of self-consistency testing can see it.",
+  },
 ];
 ---
 
 <Layout
   title="Journey - every claim ENTITY withdrew"
-  description="The honest record: eight claims this project had to withdraw - the +121% pinning headline, the widened prompt pool, the flagship thread-width prediction, the energy attribution - with what broke each one and what replaced it."
+  description="The honest record: ten claims this project had to withdraw - the +121% pinning headline, the widened prompt pool, the flagship thread-width prediction, the energy attribution, the KleidiAI coverage prediction, the probe's guessed anchor constants - with what broke each one and what replaced it."
   path="/journey/"
 >
   <section data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 pt-12 pb-10">
