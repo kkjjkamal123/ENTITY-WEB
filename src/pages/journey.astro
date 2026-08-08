@@ -87,12 +87,20 @@ const entries: Entry[] = [
     replaced:
       "Both constants now carry the reading they came from, marked as the probe's own output on a known device rather than a datasheet or a derivation. The rule underneath: a ratio is only dimensionless if both sides were measured the same way. Substituting a physically-related quantity for one side rescales everything downstream, and no amount of self-consistency testing can see it.",
   },
+  {
+    claim: "The release keystore is somewhere safe",
+    broke:
+      "Preparing v3.7.0 on a different machine. The keystore that signed every release from v3.0.0 to v3.6.2 was not on it, and not anywhere that could be checked: no .jks on the whole drive, nothing in either repo's history, no CI secret holding it, nothing in the recycle bin or cloud storage. BUILD.md said the keystore lives outside the repo so it can be managed securely, and that sentence had been treated as a plan. Outside the repo turned out to mean not backed up at all - the .gitignore entry was doing the whole job, and a .gitignore entry is not a backup strategy.",
+    cost: "The signing identity, permanently. Every escape route fails for the same reason: a released APK carries only the public certificate, Android's key rotation requires the old key to sign the rotation proof, and distribution here is GitHub rather than Play, so Google never escrowed a copy. Anyone installing fresh is unaffected; anyone already on v3.6.2 must uninstall before upgrading, losing saved conversations.",
+    replaced:
+      "A new keystore, and the rule the old sentence should have contained: outside the repo has to name where, in three places - a password manager, an encrypted cloud copy, and an offline copy. A secret that exists in one location on one machine has the durability of that machine, and no warning fires when it stops existing. The shape is the same as entries 7 and 10: the thing that failed was never measured. A backup nobody has restored from is not known to be a backup, in the same way a constant nobody read off the device is not known to be a measurement.",
+  },
 ];
 ---
 
 <Layout
   title="Journey - every claim ENTITY withdrew"
-  description="The honest record: ten claims this project had to withdraw - the +121% pinning headline, the widened prompt pool, the flagship thread-width prediction, the energy attribution, the KleidiAI coverage prediction, the probe's guessed anchor constants - with what broke each one and what replaced it."
+  description="The honest record: eleven claims this project had to withdraw - the +121% pinning headline, the widened prompt pool, the flagship thread-width prediction, the energy attribution, the KleidiAI coverage prediction, the probe's guessed anchor constants, the release keystore assumed safe - with what broke each one and what replaced it."
   path="/journey/"
 >
   <section data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 pt-12 pb-10">
