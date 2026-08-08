@@ -222,6 +222,97 @@ import { withBase } from "../lib/url";
     <A7Phases />
   </section>
 
+  <section data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 space-y-6">
+    <h2 class="text-xl md:text-2xl font-bold">A file named Q4_0 is only 76% Q4_0</h2>
+    <p class="text-dim max-w-[68ch] text-[0.875rem]">
+      The gate above is a claim about <em>types</em>. Checking it properly meant reading each
+      file's tensor table instead of its <code>general.file_type</code> label — and the label is
+      wrong about its own contents. In the exact Llama-3.2-1B Q4_0 the catalog ships,
+      <code>token_embd.weight</code> is Q6_K and two <code>ffn_down</code> tensors are Q4_1.
+      Llama 3.2 ties its embeddings, so that Q6_K tensor is also the output projection: the
+      largest matmul in the model sits off the fast path, in a quantization chosen because it
+      reaches the fast path.
+    </p>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-[0.8125rem] border-collapse">
+        <caption class="sr-only">Quality, size, KleidiAI coverage and measured speed by quantization</caption>
+        <thead>
+          <tr class="border-b border-[var(--outline)] text-left">
+            <th scope="col" class="py-2 pr-4 font-bold">Quant</th>
+            <th scope="col" class="py-2 pr-4 font-bold text-right">Perplexity</th>
+            <th scope="col" class="py-2 pr-4 font-bold text-right">vs F16</th>
+            <th scope="col" class="py-2 pr-4 font-bold text-right">Size</th>
+            <th scope="col" class="py-2 pr-4 font-bold text-right">On KleidiAI</th>
+            <th scope="col" class="py-2 pr-4 font-bold text-right">Prefill</th>
+            <th scope="col" class="py-2 font-bold text-right">Decode</th>
+          </tr>
+        </thead>
+        <tbody class="font-mono">
+          <tr class="border-b border-[var(--outline)]">
+            <td class="py-2 pr-4">F16 reference</td><td class="py-2 pr-4 text-right">14.2580</td>
+            <td class="py-2 pr-4 text-right">—</td><td class="py-2 pr-4 text-right">2480 MB</td>
+            <td class="py-2 pr-4 text-right">n/a</td><td class="py-2 pr-4 text-right">—</td><td class="py-2 text-right">—</td>
+          </tr>
+          <tr class="border-b border-[var(--outline)]">
+            <td class="py-2 pr-4"><strong>Q8_0</strong></td><td class="py-2 pr-4 text-right">14.2705</td>
+            <td class="py-2 pr-4 text-right">+0.09%</td><td class="py-2 pr-4 text-right">1321 MB</td>
+            <td class="py-2 pr-4 text-right"><strong>100%</strong></td>
+            <td class="py-2 pr-4 text-right"><strong>208.1</strong></td><td class="py-2 text-right">11.5</td>
+          </tr>
+          <tr class="border-b border-[var(--outline)]">
+            <td class="py-2 pr-4">Q4_K_M</td><td class="py-2 pr-4 text-right">14.7346</td>
+            <td class="py-2 pr-4 text-right">+3.34%</td><td class="py-2 pr-4 text-right">808 MB</td>
+            <td class="py-2 pr-4 text-right">0%</td><td class="py-2 pr-4 text-right">111.7</td><td class="py-2 text-right">16.0</td>
+          </tr>
+          <tr class="border-b border-[var(--outline)]">
+            <td class="py-2 pr-4">Q4_0 imatrix <span class="text-dim">(shipped)</span></td>
+            <td class="py-2 pr-4 text-right">15.6159</td><td class="py-2 pr-4 text-right">+9.52%</td>
+            <td class="py-2 pr-4 text-right">773 MB</td><td class="py-2 pr-4 text-right">76%</td>
+            <td class="py-2 pr-4 text-right">128.2</td><td class="py-2 text-right">18.2</td>
+          </tr>
+          <tr class="border-b border-[var(--outline)]">
+            <td class="py-2 pr-4">Q3_K_L</td><td class="py-2 pr-4 text-right">16.0927</td>
+            <td class="py-2 pr-4 text-right">+12.87%</td><td class="py-2 pr-4 text-right">733 MB</td>
+            <td class="py-2 pr-4 text-right">0%</td><td class="py-2 pr-4 text-right">43.4</td><td class="py-2 text-right">17.4</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4">Q4_0 no imatrix</td><td class="py-2 pr-4 text-right">16.5272</td>
+            <td class="py-2 pr-4 text-right">+15.92%</td><td class="py-2 pr-4 text-right">771 MB</td>
+            <td class="py-2 pr-4 text-right">79%</td>
+            <td class="py-2 pr-4 text-right"><strong>138.8</strong></td><td class="py-2 text-right"><strong>19.1</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="text-dim max-w-[68ch] text-[0.8125rem]">
+      Perplexity: wikitext-2 test, 200 chunks, every quant built from one F16 source. Speed: CMF
+      Phone 1, four threads pinned to the A78 cluster, three repetitions, 90 s cooldown between
+      models. Coverage read from each file's tensor table, not its label.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CaveatCard title="The number this project owed">
+        <p>
+          "Q4_0 is a quality tradeoff" appeared three times in these docs with no figure attached.
+          It is <strong>5.6% perplexity against Q4_K_M</strong> — the price of the 3.4x cut in
+          time-to-first-token. And a plain <code>llama-quantize … Q4_0</code>, the documented
+          command, is <strong>5.5% worse</strong> than the imatrix-calibrated file the catalog
+          ships, under the same filename and the same <code>file_type</code>. Nothing warns you.
+        </p>
+      </CaveatCard>
+      <CaveatCard title="The imatrix costs speed as well as buying quality">
+        <p>
+          Naive Q4_0 is <em>faster</em> than the imatrix Q4_0 — 138.8 against 128.2 tok/s prefill,
+          19.1 against 18.2 decode. The importance matrix promotes the first
+          <code>ffn_down</code> layers to Q4_1, off the KleidiAI path, and adds 2 MB. So one flag
+          buys 5.5% quality and costs 7.7% prefill, and neither effect is visible from outside
+          the file.
+        </p>
+      </CaveatCard>
+    </div>
+  </section>
+
   <section data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10">
     <h2 class="text-xl md:text-2xl font-bold">Negative results, at equal weight</h2>
     <p class="mt-2 text-dim max-w-[68ch] text-[0.875rem]">
@@ -237,6 +328,23 @@ import { withBase } from "../lib/url";
           roughly a third of an A78, so every GEMM waited on the stragglers. Removed in v2.1.0;
           the right width is an empirical property of the SoC, which is why the benchmark decides
           it rather than an assumption.
+        </p>
+      </CaveatCard>
+      <CaveatCard title="Disproved: more KleidiAI coverage would be faster">
+        <p>
+          Given the 76% figure above, the obvious fix was to promote the output projection to
+          Q8_0 — still an eligible type — taking coverage to <strong>97%</strong> for 8% more
+          file and no quality change. The prediction was written down first: prefill faster,
+          decode slower. Measured: <strong>prefill fell 125.7 to 121.8 tok/s and decode fell
+          18.0 to 15.9</strong>. Slower on both.
+        </p>
+        <p class="mt-2">
+          llama.cpp computes logits only for the last position of a prompt, so that tensor runs
+          once per prefill rather than once per token; in decode it is bandwidth-bound and a
+          heavier tensor is a straight loss. <strong>Coverage is not throughput</strong> — what
+          pays is coverage of the <em>hot</em> tensors, which is why Q8_0 wins prefill by 62%
+          and this rebuild lost. The file is published as a negative result and kept out of the
+          catalog.
         </p>
       </CaveatCard>
       <CaveatCard title="Not an efficiency win: pinning to the LITTLE cluster">
