@@ -138,6 +138,11 @@
   ],
   "bench": [
     {
+      "version": "2.2.0",
+      "date": "2026-08-08",
+      "title": "the catalog, brought level with chat"
+    },
+    {
       "version": "2.1.1",
       "date": null,
       "title": "sampler parity, and a Settings fix"
