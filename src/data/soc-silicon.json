@@ -1,0 +1,891 @@
+{
+ "generated_at": "2026-08-10T08:20:09.165Z",
+ "source": "derived from src/data/leaderboard.json and src/data/catalog.json",
+ "method": "decodeGBs = optimized decode_tok_s x model file bytes; computeRate = optimized prompt_tok_s x paramsB, divided by the quantization's prompt-path gain. Median across unique runs per SoC.",
+ "q8PrefillGain": 1.62,
+ "kquantPrefillPenalty": 0.87,
+ "anchorSoc": "MT6878",
+ "socs": [
+  {
+   "soc": "MT6897",
+   "name": "Dimensity 8300",
+   "devices": [
+    "OPPO CPH2737"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16",
+    "i8mm",
+    "sve",
+    "sve2"
+   ],
+   "fastCores": 4,
+   "observations": 4,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0",
+    "Qwen2.5 0.5B Instruct Q8_0"
+   ],
+   "decodeGBs": 24.659526848,
+   "decodeGBsMin": 14.455584704,
+   "decodeGBsMax": 27.774881504,
+   "spreadPct": 54.01278330318109,
+   "computeRate": 131.44,
+   "provisional": true,
+   "highVariance": false,
+   "threadPolicyStale": false,
+   "threadsUsed": [
+    4
+   ],
+   "crossModel": [
+    {
+     "heldOut": "Llama 3.2 1B Instruct Q4_0",
+     "fittedOn": "Qwen2.5 0.5B Instruct Q8_0",
+     "predictedToksPerS": 35.930077873714765,
+     "measuredToksPerS": 30.5,
+     "errorPct": 17.803534012179558
+    },
+    {
+     "heldOut": "Qwen2.5 0.5B Instruct Q8_0",
+     "fittedOn": "Llama 3.2 1B Instruct Q4_0",
+     "predictedToksPerS": 44.395951648269545,
+     "measuredToksPerS": 52.3,
+     "errorPct": -15.112903158184421
+    }
+   ]
+  },
+  {
+   "soc": "Tensor G5",
+   "name": "Tensor G5",
+   "devices": [
+    "Google Pixel 10"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16",
+    "i8mm",
+    "sve",
+    "sve2"
+   ],
+   "fastCores": 6,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 21.490120576,
+   "decodeGBsMin": 21.490120576,
+   "decodeGBsMax": 21.490120576,
+   "spreadPct": null,
+   "computeRate": 117.428,
+   "provisional": false,
+   "highVariance": false,
+   "threadPolicyStale": true,
+   "threadsUsed": [
+    2
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "SM8550",
+   "name": "Snapdragon 8 Gen 2",
+   "devices": [
+    "Galaxy S23"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16",
+    "i8mm"
+   ],
+   "fastCores": 5,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 18.398016896,
+   "decodeGBsMin": 18.398016896,
+   "decodeGBsMax": 18.398016896,
+   "spreadPct": null,
+   "computeRate": 137.64,
+   "provisional": false,
+   "highVariance": false,
+   "threadPolicyStale": true,
+   "threadsUsed": [
+    2
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "SM8250",
+   "name": "Snapdragon 865",
+   "devices": [
+    "Galaxy S20 FE 5G"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 17.624990976,
+   "decodeGBsMin": 17.624990976,
+   "decodeGBsMax": 17.624990976,
+   "spreadPct": null,
+   "computeRate": 89.032,
+   "provisional": false,
+   "highVariance": false,
+   "threadPolicyStale": true,
+   "threadsUsed": [
+    2
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "SM8450",
+   "name": "Snapdragon 8 Gen 1",
+   "devices": [
+    "Galaxy S22 Ultra"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16",
+    "i8mm"
+   ],
+   "fastCores": 4,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 13.991769152000002,
+   "decodeGBsMin": 13.991769152000002,
+   "decodeGBsMax": 13.991769152000002,
+   "spreadPct": null,
+   "computeRate": 101.184,
+   "provisional": false,
+   "highVariance": false,
+   "threadPolicyStale": true,
+   "threadsUsed": [
+    2
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "MT6878",
+   "name": "Dimensity 7300",
+   "devices": [
+    "CMF Phone 1"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "observations": 6,
+   "models": [
+    "Qwen2.5 0.5B Instruct Q8_0",
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 13.834570096,
+   "decodeGBsMin": 12.445717312000001,
+   "decodeGBsMax": 14.657490048,
+   "spreadPct": 15.987289237411794,
+   "computeRate": 170.5,
+   "provisional": true,
+   "highVariance": false,
+   "threadPolicyStale": false,
+   "threadsUsed": [
+    4
+   ],
+   "crossModel": [
+    {
+     "heldOut": "Llama 3.2 1B Instruct Q4_0",
+     "fittedOn": "Qwen2.5 0.5B Instruct Q8_0",
+     "predictedToksPerS": 18.377238683018547,
+     "measuredToksPerS": 17.8,
+     "errorPct": 3.2429139495423933
+    },
+    {
+     "heldOut": "Qwen2.5 0.5B Instruct Q8_0",
+     "fittedOn": "Llama 3.2 1B Instruct Q4_0",
+     "predictedToksPerS": 25.909768502924518,
+     "measuredToksPerS": 26.75,
+     "errorPct": -3.1410523255158216
+    }
+   ]
+  },
+  {
+   "soc": "s5e8835",
+   "name": "s5e8835",
+   "devices": [
+    "samsung SM-M366B"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 12.832230272000002,
+   "decodeGBsMin": 12.832230272000002,
+   "decodeGBsMax": 12.832230272000002,
+   "spreadPct": null,
+   "computeRate": 111.6,
+   "provisional": true,
+   "highVariance": false,
+   "threadPolicyStale": false,
+   "threadsUsed": [
+    4
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "MT6886",
+   "name": "MT6886",
+   "devices": [
+    "vivo I2301"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16",
+    "i8mm",
+    "sve",
+    "sve2"
+   ],
+   "fastCores": 2,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 12.36841472,
+   "decodeGBsMin": 12.36841472,
+   "decodeGBsMax": 12.36841472,
+   "spreadPct": null,
+   "computeRate": 78.12,
+   "provisional": true,
+   "highVariance": false,
+   "threadPolicyStale": false,
+   "threadsUsed": [
+    2
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "SM6650",
+   "name": "Snapdragon 6 Gen 4",
+   "devices": [
+    "OPPO CPH2729"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16",
+    "i8mm"
+   ],
+   "fastCores": 4,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 11.518086208,
+   "decodeGBsMin": 11.518086208,
+   "decodeGBsMax": 11.518086208,
+   "spreadPct": null,
+   "computeRate": 228.16,
+   "provisional": true,
+   "highVariance": false,
+   "threadPolicyStale": false,
+   "threadsUsed": [
+    4
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "s5e8535",
+   "name": "s5e8535",
+   "devices": [
+    "samsung SM-A146B"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 2,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 11.054270656,
+   "decodeGBsMin": 11.054270656,
+   "decodeGBsMax": 11.054270656,
+   "spreadPct": null,
+   "computeRate": 57.04,
+   "provisional": true,
+   "highVariance": false,
+   "threadPolicyStale": false,
+   "threadsUsed": [
+    2
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "MT6833",
+   "name": "Dimensity 700",
+   "devices": [
+    "OPPO CPH2553"
+   ],
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 2,
+   "observations": 2,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 10.513152512000001,
+   "decodeGBsMin": 10.203942144,
+   "decodeGBsMax": 10.82236288,
+   "spreadPct": 5.882352941176461,
+   "computeRate": 98.58,
+   "provisional": true,
+   "highVariance": false,
+   "threadPolicyStale": false,
+   "threadsUsed": [
+    6
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "SM6225",
+   "name": "SM6225",
+   "devices": [
+    "samsung SM-A235F"
+   ],
+   "flags": [],
+   "fastCores": 4,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 6.0064113984,
+   "decodeGBsMin": 6.0064113984,
+   "decodeGBsMax": 6.0064113984,
+   "spreadPct": null,
+   "computeRate": 14.756,
+   "provisional": true,
+   "highVariance": false,
+   "threadPolicyStale": false,
+   "threadsUsed": [
+    4
+   ],
+   "crossModel": null
+  },
+  {
+   "soc": "MT6765H",
+   "name": "Helio G37",
+   "devices": [
+    "Spark 10"
+   ],
+   "flags": [],
+   "fastCores": 4,
+   "observations": 1,
+   "models": [
+    "Llama 3.2 1B Instruct Q4_0"
+   ],
+   "decodeGBs": 3.5404587136,
+   "decodeGBsMin": 3.5404587136,
+   "decodeGBsMax": 3.5404587136,
+   "spreadPct": null,
+   "computeRate": 9.7092,
+   "provisional": true,
+   "highVariance": false,
+   "threadPolicyStale": false,
+   "threadsUsed": [
+    4
+   ],
+   "crossModel": null
+  }
+ ],
+ "observations": [
+  {
+   "id": 3,
+   "soc": "MT6878",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "CMF Phone 1",
+   "model": "qwen2.5-0.5b-q8_0",
+   "modelLabel": "Qwen2.5 0.5B Instruct Q8_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 27.6,
+   "promptToksPerS": 506,
+   "decodeGBs": 14.657490048,
+   "computeRate": 156.17283950617283,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 4,
+   "soc": "MT6878",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "CMF Phone 1",
+   "model": "qwen2.5-0.5b-q8_0",
+   "modelLabel": "Qwen2.5 0.5B Instruct Q8_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 25.9,
+   "promptToksPerS": 493,
+   "decodeGBs": 13.754673632,
+   "computeRate": 152.16049382716048,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 5,
+   "soc": "Tensor G5",
+   "threads": 2,
+   "threadPolicyStale": true,
+   "device": "Google Pixel 10",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "i8mm",
+    "sve",
+    "sve2",
+    "fp16"
+   ],
+   "fastCores": 6,
+   "runs": 3,
+   "decodeToksPerS": 27.8,
+   "promptToksPerS": 94.7,
+   "decodeGBs": 21.490120576,
+   "computeRate": 117.428,
+   "provisional": false,
+   "highVariance": false
+  },
+  {
+   "id": 6,
+   "soc": "MT6878",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "CMF Phone 1",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 16.1,
+   "promptToksPerS": 139,
+   "decodeGBs": 12.445717312000001,
+   "computeRate": 172.35999999999999,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 7,
+   "soc": "SM8550",
+   "threads": 2,
+   "threadPolicyStale": true,
+   "device": "Galaxy S23",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "i8mm",
+    "fp16"
+   ],
+   "fastCores": 5,
+   "runs": 3,
+   "decodeToksPerS": 23.8,
+   "promptToksPerS": 111,
+   "decodeGBs": 18.398016896,
+   "computeRate": 137.64,
+   "provisional": false,
+   "highVariance": false
+  },
+  {
+   "id": 8,
+   "soc": "SM8450",
+   "threads": 2,
+   "threadPolicyStale": true,
+   "device": "Galaxy S22 Ultra",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "i8mm",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 3,
+   "decodeToksPerS": 18.1,
+   "promptToksPerS": 81.6,
+   "decodeGBs": 13.991769152000002,
+   "computeRate": 101.184,
+   "provisional": false,
+   "highVariance": false
+  },
+  {
+   "id": 9,
+   "soc": "MT6897",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "OPPO CPH2737",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "i8mm",
+    "sve",
+    "sve2",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 18.7,
+   "promptToksPerS": 107,
+   "decodeGBs": 14.455584704,
+   "computeRate": 132.68,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 10,
+   "soc": "MT6897",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "OPPO CPH2737",
+   "model": "qwen2.5-0.5b-q8_0",
+   "modelLabel": "Qwen2.5 0.5B Instruct Q8_0",
+   "flags": [
+    "dotprod",
+    "i8mm",
+    "sve",
+    "sve2",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 52.3,
+   "promptToksPerS": 275,
+   "decodeGBs": 27.774881504,
+   "computeRate": 84.87654320987654,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 11,
+   "soc": "MT6897",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "OPPO CPH2737",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "i8mm",
+    "sve",
+    "sve2",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 30.5,
+   "promptToksPerS": 105,
+   "decodeGBs": 23.57729056,
+   "computeRate": 130.2,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 15,
+   "soc": "MT6878",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "CMF Phone 1",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 18,
+   "promptToksPerS": 140,
+   "decodeGBs": 13.91446656,
+   "computeRate": 173.6,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 16,
+   "soc": "MT6878",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "CMF Phone 1",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 17.6,
+   "promptToksPerS": 136,
+   "decodeGBs": 13.605256192000002,
+   "computeRate": 168.64,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 17,
+   "soc": "SM8250",
+   "threads": 2,
+   "threadPolicyStale": true,
+   "device": "Galaxy S20 FE 5G",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 3,
+   "decodeToksPerS": 22.8,
+   "promptToksPerS": 71.8,
+   "decodeGBs": 17.624990976,
+   "computeRate": 89.032,
+   "provisional": false,
+   "highVariance": false
+  },
+  {
+   "id": 18,
+   "soc": "MT6878",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "CMF Phone 1",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 18.1,
+   "promptToksPerS": 140,
+   "decodeGBs": 13.991769152000002,
+   "computeRate": 173.6,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 19,
+   "soc": "MT6886",
+   "threads": 2,
+   "threadPolicyStale": false,
+   "device": "vivo I2301",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "i8mm",
+    "sve",
+    "sve2",
+    "fp16"
+   ],
+   "fastCores": 2,
+   "runs": 1,
+   "decodeToksPerS": 16,
+   "promptToksPerS": 63,
+   "decodeGBs": 12.36841472,
+   "computeRate": 78.12,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 20,
+   "soc": "MT6833",
+   "threads": 6,
+   "threadPolicyStale": false,
+   "device": "OPPO CPH2553",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 2,
+   "runs": 1,
+   "decodeToksPerS": 13.2,
+   "promptToksPerS": 77.6,
+   "decodeGBs": 10.203942144,
+   "computeRate": 96.22399999999999,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 22,
+   "soc": "MT6833",
+   "threads": 6,
+   "threadPolicyStale": false,
+   "device": "OPPO CPH2553",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 2,
+   "runs": 1,
+   "decodeToksPerS": 14,
+   "promptToksPerS": 81.4,
+   "decodeGBs": 10.82236288,
+   "computeRate": 100.936,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 23,
+   "soc": "MT6765H",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "Spark 10",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 4.58,
+   "promptToksPerS": 7.83,
+   "decodeGBs": 3.5404587136,
+   "computeRate": 9.7092,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 24,
+   "soc": "MT6897",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "OPPO CPH2737",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "i8mm",
+    "sve",
+    "sve2",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 33.3,
+   "promptToksPerS": 129,
+   "decodeGBs": 25.741763135999996,
+   "computeRate": 159.96,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 25,
+   "soc": "s5e8535",
+   "threads": 2,
+   "threadPolicyStale": false,
+   "device": "samsung SM-A146B",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 2,
+   "runs": 1,
+   "decodeToksPerS": 14.3,
+   "promptToksPerS": 46,
+   "decodeGBs": 11.054270656,
+   "computeRate": 57.04,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 26,
+   "soc": "SM6225",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "samsung SM-A235F",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 7.77,
+   "promptToksPerS": 11.9,
+   "decodeGBs": 6.0064113984,
+   "computeRate": 14.756,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 27,
+   "soc": "SM6650",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "OPPO CPH2729",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "i8mm",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 14.9,
+   "promptToksPerS": 184,
+   "decodeGBs": 11.518086208,
+   "computeRate": 228.16,
+   "provisional": true,
+   "highVariance": false
+  },
+  {
+   "id": 28,
+   "soc": "s5e8835",
+   "threads": 4,
+   "threadPolicyStale": false,
+   "device": "samsung SM-M366B",
+   "model": "llama3.2-1b-q4_0",
+   "modelLabel": "Llama 3.2 1B Instruct Q4_0",
+   "flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "fastCores": 4,
+   "runs": 1,
+   "decodeToksPerS": 16.6,
+   "promptToksPerS": 90,
+   "decodeGBs": 12.832230272000002,
+   "computeRate": 111.6,
+   "provisional": true,
+   "highVariance": false
+  }
+ ]
+}

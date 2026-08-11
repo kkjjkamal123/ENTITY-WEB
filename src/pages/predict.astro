@@ -1,0 +1,383 @@
+---
+import Layout from "../components/Layout.astro";
+import CaveatCard from "../components/CaveatCard.astro";
+import { withBase } from "../lib/url";
+import {
+  SOCS,
+  WORKLOADS,
+  ALL,
+  rank,
+  recommend,
+  socProfile,
+  fmtBytes,
+  MIN_USABLE_DECODE,
+} from "../lib/probe";
+
+/*
+  The static render is the anchor device at a realistic free-memory figure: a 6 GB CMF
+  Phone 1 reports roughly 2.3 GB available with a launcher and a couple of apps resident.
+  Everything below it is correct without JavaScript; the island replaces it with the same
+  arithmetic over a chip the reader picks.
+*/
+const ANCHOR = SOCS.find((s) => s.soc === "MT6878")!;
+const ANCHOR_RAM = 2304 * 1024 * 1024;
+const anchorProfile = socProfile(ANCHOR, ANCHOR_RAM);
+const anchorRank = rank(anchorProfile, "BALANCED");
+const anchorRec = recommend(anchorProfile, "BALANCED");
+
+/*
+  How far the crowd-derived profile lands from the lab calibration on the same chip.
+  DeviceProbe was fitted against a controlled llama-bench session on this phone;
+  socProfile() reconstructs the same two numbers from contributed field runs that nobody
+  supervised. The gap between them is the honest measure of what the field data is worth.
+*/
+const LAB_BANDWIDTH_GBS = 26.2;
+const LAB_COMPUTE_SCORE = 1.0;
+const bandwidthErrPct = ((anchorProfile.bandwidthGBs - LAB_BANDWIDTH_GBS) / LAB_BANDWIDTH_GBS) * 100;
+const computeErrPct = ((anchorProfile.computeScore - LAB_COMPUTE_SCORE) / LAB_COMPUTE_SCORE) * 100;
+
+const crossModel = SOCS.filter((s) => s.crossModel?.length).map((s) => ({
+  soc: s,
+  worst: s.crossModel![0],
+}));
+
+/** Chips whose whole record is one pass - they get a provisional mark and no error bar. */
+const singlePassSocs = SOCS.filter((s) => s.spreadPct === null).length;
+
+/*
+  Chips whose every run predates the v3.5.0 thread fix. They ran on two threads while
+  reporting four to six performance cores, so their constants are floors. This is the
+  same defect the leaderboard page records as falsified - it is visible here as a
+  systematic understatement of exactly the fastest silicon in the set.
+*/
+const understated = SOCS.filter((s) => s.threadPolicyStale);
+
+const fitLabel = (f: string) =>
+  f === "GREAT" ? "good fit" : f === "OK" ? "fits" : f === "TIGHT" ? "tight" : "too big";
+const fitClass = (f: string) =>
+  f === "GREAT" ? "t-ok" : f === "TIGHT" ? "t-warn" : f === "TOO_BIG" ? "t-danger" : "";
+---
+
+<Layout
+  title="Predict before you download - ENTITY"
+  description="Pick an Arm SoC that someone has actually run ENTITY on and see what any of the 19 catalog models will do on it - generation rate, time to first token and whether it fits - before spending a gigabyte finding out."
+  path="/predict/"
+>
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pt-14 md:pt-20 pb-6">
+    <p class="eyebrow">{SOCS.length} measured Arm SoCs &middot; {ALL.length} models &middot; no download required</p>
+    <h1 class="mt-4 text-3xl md:text-[2.75rem] leading-[1.1] font-bold max-w-[20ch] tracking-tight">
+      Find out before you spend <span class="text-accent-ink">two gigabytes.</span>
+    </h1>
+    <p class="mt-4 max-w-[66ch] text-dim text-[0.9375rem] leading-relaxed">
+      A model catalog that ranks on RAM and ISA flags answers "will it fit". It does not answer
+      "will it be usable", and those are different questions: a 4 GB phone can be told a 3B model
+      fits and still watch it generate at 3 tok/s. The only way to learn that has been to download
+      the file first.
+    </p>
+    <p class="mt-3 max-w-[66ch] text-[0.9375rem] leading-relaxed">
+      ENTITY answers it in half a second on the phone instead, from two measurements and one
+      physical relationship. This page runs that same prediction against silicon somebody has
+      already contributed a benchmark from - so it works on a laptop, for a phone you do not own.
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 pb-10" aria-label="Predictor">
+    <div id="pr-root" hidden>
+      <div class="card p-5 md:p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5">
+          <label class="block">
+            <span class="microlabel">Silicon</span>
+            <select
+              id="pr-soc"
+              class="mt-2 w-full card !rounded-[6px] px-2.5 py-2 text-[0.8125rem]"
+            ></select>
+          </label>
+          <label class="block">
+            <span class="microlabel">Free memory right now</span>
+            <div class="mt-2 flex items-center gap-3">
+              <input
+                id="pr-ram"
+                type="range"
+                min="512"
+                max="12288"
+                step="128"
+                value="2304"
+                class="w-full accent-[var(--fill)]"
+              />
+              <span id="pr-ram-out" class="text-[0.8125rem] tabular-nums whitespace-nowrap w-[6.5rem] text-right"></span>
+            </div>
+          </label>
+        </div>
+
+        <div class="mt-5 flex flex-wrap items-center gap-2">
+          <span class="microlabel mr-1">Optimising for</span>
+          {
+            WORKLOADS.map((w) => (
+              <button
+                type="button"
+                class="chip cursor-pointer"
+                data-workload={w.id}
+                aria-pressed="false"
+                title={w.blurb}
+              >
+                {w.label}
+              </button>
+            ))
+          }
+        </div>
+
+        <p id="pr-soc-note" class="mt-4 text-[0.6875rem] text-dim leading-relaxed"></p>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-4 items-start">
+        <div id="pr-rec" class="card p-5 md:p-6"></div>
+        <div class="scroll-x card !rounded-[10px]">
+          <table class="data-table min-w-[640px]">
+            <caption class="sr-only">
+              Every catalog model predicted on the selected SoC, best first
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Model</th>
+                <th scope="col" class="num">Download</th>
+                <th scope="col" class="num">Decode tok/s</th>
+                <th scope="col" class="num">TTFT 512</th>
+                <th scope="col">Fit</th>
+              </tr>
+            </thead>
+            <tbody id="pr-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {/* no-JS fallback: the anchor device, fully rendered */}
+    <div id="pr-static">
+      <div class="card p-5">
+        <p class="microlabel">Anchor device</p>
+        <p class="mt-2 text-[0.875rem]">
+          {ANCHOR.devices[0]} &middot; {ANCHOR.name} &middot; {(ANCHOR_RAM / 1024 ** 3).toFixed(1)} GB
+          free &middot; balanced workload
+        </p>
+        <p class="mt-2 text-[0.6875rem] text-dim">
+          The chip picker needs JavaScript; the table below does not, and is the same arithmetic.
+        </p>
+      </div>
+      {
+        anchorRec && (
+          <p class="mt-4 text-[0.875rem]">
+            Recommended: <strong>{anchorRec.headline}</strong> - {anchorRec.why}
+          </p>
+        )
+      }
+      <div class="scroll-x card !rounded-[10px] mt-4">
+        <table class="data-table min-w-[640px]">
+          <caption class="sr-only">Catalog predictions for the anchor device</caption>
+          <thead>
+            <tr>
+              <th scope="col">Model</th>
+              <th scope="col" class="num">Download</th>
+              <th scope="col" class="num">Decode tok/s</th>
+              <th scope="col" class="num">TTFT 512</th>
+              <th scope="col">Fit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              anchorRank.map((r) => (
+                <tr class:list={[!r.usable && "opacity-55"]}>
+                  <td>
+                    {r.entry.name}
+                    <span class="block text-[0.6875rem] text-dim">
+                      {r.entry.vendor} &middot; {r.entry.quant}
+                      {!r.entry.kleidiAccelerated && " · no KleidiAI"}
+                    </span>
+                  </td>
+                  <td class="num">{fmtBytes(r.entry.sizeBytes)}</td>
+                  <td class="num">
+                    {r.assessment.fit === "TOO_BIG" ? "-" : r.estimate.decodeToksPerS.toFixed(1)}
+                  </td>
+                  <td class="num">
+                    {r.assessment.fit === "TOO_BIG" ? "-" : `${r.estimate.ttftSeconds.toFixed(1)}s`}
+                  </td>
+                  <td>
+                    <span class={fitClass(r.assessment.fit)}>{fitLabel(r.assessment.fit)}</span>
+                    <span class="block text-[0.6875rem] text-dim">{r.assessment.reason}</span>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10" aria-label="Why this can work">
+    <p class="eyebrow">Why a prediction is possible at all</p>
+    <h2 class="mt-2 text-xl md:text-2xl font-bold">One division, not a fitted curve</h2>
+    <div class="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="card p-5 text-[0.8125rem] leading-relaxed space-y-3">
+        <p>
+          Generating one token reads essentially every weight once. So the rate a phone can
+          generate is the rate it can move bytes, divided by how many bytes the model is:
+        </p>
+        <p class="text-center font-bold text-[0.9375rem] py-1">
+          decode tok/s &times; model bytes = bytes the chip streams per second
+        </p>
+        <p>
+          The left side is two numbers already on <a href={withBase("/leaderboard/")}>the leaderboard</a>.
+          The right side is a property of the silicon and should not care which model produced it.
+          That is a claim with a sharp edge: measure two <em>different</em> models on one chip and
+          the two products must agree, or the reasoning is wrong.
+        </p>
+        <p>
+          Prompt processing is a different quantity - a GEMM over the whole prompt, so it tracks
+          compute rather than memory - and it is derived the same way, from
+          <code>prompt tok/s &times; parameters</code> with the quantization's kernel path divided
+          out.
+        </p>
+      </div>
+      <div class="card p-5 text-[0.8125rem] leading-relaxed space-y-3">
+        <p class="font-bold">The test, on the two chips that were measured on more than one model</p>
+        <div class="scroll-x">
+          <table class="data-table min-w-[440px]">
+            <caption class="sr-only">Cross-model prediction error per SoC</caption>
+            <thead>
+              <tr>
+                <th scope="col">SoC</th>
+                <th scope="col">Predicted from</th>
+                <th scope="col" class="num">Predicted</th>
+                <th scope="col" class="num">Measured</th>
+                <th scope="col" class="num">Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                crossModel.map(({ soc, worst }) => (
+                  <tr>
+                    <td>{soc.name}</td>
+                    <td class="text-[0.6875rem]">{worst.fittedOn}</td>
+                    <td class="num">{worst.predictedToksPerS.toFixed(1)}</td>
+                    <td class="num">{worst.measuredToksPerS.toFixed(1)}</td>
+                    <td class:list={["num whitespace-nowrap", Math.abs(worst.errorPct) > 10 ? "t-warn" : "t-ok"]}>
+                      {`${worst.errorPct >= 0 ? "+" : ""}${worst.errorPct.toFixed(1)}%`}
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+        <p>
+          On the Dimensity 7300 a 531 MB Q8_0 model predicts a 773 MB Q4_0 model's generation rate
+          to within a few percent - different model, different family, different quantization, one
+          constant. On the Dimensity 8300 it does not, and the reason is visible in the same
+          dataset: that chip's four contributed passes disagree with each other by 54% end to end,
+          so there is no stable constant there to find. The method reports the spread rather than
+          the average.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-4 card p-5 text-[0.8125rem] leading-relaxed">
+      <p class="font-bold">
+        {understated.length} of these chips are understated, and it is possible to say by how
+        much less
+      </p>
+      <p class="mt-2">
+        {understated.map((s) => s.name).join(", ")} were each measured once, before v3.5.0 fixed
+        the thread-derivation rule. That rule counted cores within 10% of the fastest clock, and
+        every modern flagship puts its prime core 17-20% above its own big cluster, so the count
+        collapsed to 1 and was clamped to 2. Those runs are what the chip did on two threads while
+        reporting {Math.min(...understated.map((s) => s.fastCores))}-{Math.max(...understated.map((s) => s.fastCores))}
+        {" "}performance cores - a floor, not a reading, and the picker labels them as such.
+      </p>
+      <p class="mt-2 text-dim">
+        They are kept rather than dropped. The error has a known sign, which makes an
+        understated number usable; and the defect that caused it is
+        {" "}<a href={withBase("/leaderboard/")}>already published as falsified</a> rather than
+        quietly corrected. Re-running those four phones on a current build is the single
+        highest-value contribution this dataset could receive.
+      </p>
+    </div>
+
+    <div class="mt-4 card p-5 text-[0.8125rem] leading-relaxed">
+      <p class="font-bold">A second check: the crowd against the lab</p>
+      <p class="mt-2">
+        The app's probe was calibrated in a controlled session on the CMF Phone 1 - unplugged,
+        thermally settled, <code>llama-bench -p 512 -n 128 -r 3</code>. Rebuilding the same two
+        constants from nothing but unsupervised field submissions of that chip lands at
+        <strong> {anchorProfile.bandwidthGBs.toFixed(1)} GB/s</strong> against the lab's {LAB_BANDWIDTH_GBS},
+        a {bandwidthErrPct >= 0 ? "+" : ""}{bandwidthErrPct.toFixed(1)}% difference, and a compute
+        score of <strong>{anchorProfile.computeScore.toFixed(2)}</strong> against the lab's 1.00,
+        {computeErrPct >= 0 ? " +" : " "}{computeErrPct.toFixed(1)}%. Nobody who submitted those
+        runs was following the benchmark protocol.
+      </p>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-10" aria-label="Method and limits">
+    <h2 class="text-xl font-bold">What this is, and what it is not</h2>
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CaveatCard title="It is an estimate, and the app says so on screen too">
+        <ul class="list-disc pl-4 space-y-1.5">
+          <li>
+            It cannot see thermal headroom, memory pressure from other apps, or the vendor's
+            scheduler. Treat it as an order-of-magnitude guide that keeps you off a model your
+            phone cannot serve, not as a benchmark result.
+          </li>
+          <li>
+            {singlePassSocs} of the {SOCS.length} chips here rest on a single contributed pass. Those rows carry
+            no error bar because one measurement cannot have one; two back-to-back single passes on
+            the same phone and model have disagreed by 19.6%.
+          </li>
+          <li>
+            Free memory is the axis, not installed RAM, because that is what a model has to fit
+            into - and it moves with whatever else is running. The same phone really does have less
+            room when it is busy.
+          </li>
+          <li>
+            Below {MIN_USABLE_DECODE} tok/s no recommendation is made at all. A reply arriving
+            slower than you can read is not a smaller win; it is a different outcome.
+          </li>
+        </ul>
+      </CaveatCard>
+      <CaveatCard title="Where the numbers come from">
+        <ul class="list-disc pl-4 space-y-1.5">
+          <li>
+            The {ALL.length} models are extracted from the app's own <code>ModelCatalog.kt</code> at
+            build time - both copies of it, asserted identical - so this page cannot describe a
+            catalog the app does not ship.
+          </li>
+          <li>
+            The prediction is a transcription of <code>DeviceProbe.kt</code>. A fixture of eight
+            device profiles &times; {ALL.length} models - every estimate, fit verdict and
+            recommendation - is generated from this page's code and asserted against the Kotlin
+            original inside the app's unit test suite, so the two cannot drift apart quietly.
+          </li>
+          <li>
+            The per-SoC constants are derived from the public contributed dataset by
+            <code>scripts/derive-silicon.mjs</code>; every device offered above is a device someone
+            actually ran ENTITY Bench on.
+          </li>
+          <li>
+            Porting the probe to a page is also what found a bug in it: the app used to price a
+            cramped fit at a fixed penalty the capability term simply outbid, and would recommend a
+            2.18 GB download at 6.3 tok/s over a 1.7B model at 14.6. A tight fit is now excluded
+            outright.
+          </li>
+        </ul>
+      </CaveatCard>
+    </div>
+    <p class="mt-6 text-[0.8125rem] text-dim">
+      Prefer a measurement to a prediction: <a href={withBase("/apps/#download")}>ENTITY Bench</a>
+      {" "}runs the real thing on your phone in a few minutes, and
+      {" "}<a href={withBase("/leaderboard/")}>the leaderboard</a> is where its result would land.
+    </p>
+  </section>
+
+  <script>
+    import "../scripts/predict";
+  </script>
+</Layout>

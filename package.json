@@ -8,6 +8,10 @@
     "build": "astro build",
     "preview": "astro preview",
     "refresh:leaderboard": "node scripts/refresh-leaderboard.mjs",
+    "build:catalog": "node scripts/extract-catalog.mjs",
+    "build:silicon": "node scripts/derive-silicon.mjs",
+    "build:parity": "node scripts/build-parity.mjs",
+    "build:data": "npm run build:catalog && npm run build:silicon && npm run build:parity",
     "build:changelog": "node scripts/build-changelog.mjs",
     "build:images": "node scripts/process-images.mjs",
     "build:og": "node scripts/og-images.mjs"

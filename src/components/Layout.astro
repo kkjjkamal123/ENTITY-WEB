@@ -171,7 +171,11 @@ const og = `${site}${withBase(ogImage ?? `/og${path.replace(/\/$/, "") || "/inde
            ever shows intermediate values, and the exact string is restored at
            the end. A stalled rAF (background tab, throttling) must never leave
            a wrong number on screen. */
-        const finalText = el.dataset.countFinal!;
+        /* Fall back to whatever was server-rendered if data-count-final is absent. An
+           element that reaches here without it used to be blanked outright, which is a
+           silent way for a headline number to disappear; the rendered text is always a
+           correct answer, so it is the right default. */
+        const finalText = el.dataset.countFinal ?? el.textContent ?? "";
         const settle = () => (el.textContent = finalText);
         if (rm) {
           settle();

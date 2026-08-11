@@ -12,6 +12,7 @@ const pages = [
   ["optimizations", "Every lever, with sources", "Backend dispatch, core affinity, thread derivation, adaptive context, thermal guard - and the regressions, at equal weight."],
   ["evidence", "The record, with its boundaries", "Four-arm five-run exports, energy per 128 tokens, both competitor sessions - and every limit stated."],
   ["leaderboard", "How much tuning earns, per chip", "Every contributed ENTITY Bench run: the decode multiplier per Arm SoC, with power gated on validity."],
+  ["predict", "Find out before you spend two gigabytes.", "What any of 19 models will do on 13 measured Arm SoCs - generation rate, time to first token, and whether it fits."],
   ["apps", "Two apps, one runtime", "ENTITY chat v3.6.2 and ENTITY Bench v2.1.1 - arm64-v8a, Android 13+, direct APK downloads."],
   ["journey", "What we believed, what broke it", "Eight withdrawn claims, each with what broke it and what replaced it. The falsifications are the evidence."],
   ["docs", "Docs, FAQ, changelog", "Architecture, build, reproducibility, the FAQ in full, and 35 release notes across both apps."],

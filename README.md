@@ -31,6 +31,37 @@ npm run build:changelog  # releases/*.md -> src/data/changelog.json
 npm run build:og         # Open Graph PNGs -> public/og (needs JetBrains Mono in fontconfig)
 ```
 
+## The predictor (`/predict`)
+
+`src/lib/probe.ts` is a transcription of the app's `DeviceProbe.kt`: given a device profile
+it estimates what each catalog model will do, and recommends one. Three committed artifacts
+feed it, all regenerable, all needing the app repo checked out beside this one as
+`../entity-arm`:
+
+```bash
+npm run build:catalog   # ModelCatalog.kt (both copies, asserted identical) -> src/data/catalog.json
+npm run build:silicon   # leaderboard.json + catalog.json         -> src/data/soc-silicon.json
+npm run build:parity    # probe.ts over a fixed grid -> the app's test resources
+npm run build:data      # all three, in order
+```
+
+Two invariants keep the page from claiming things the app does not do:
+
+- **The catalog is extracted, never retyped.** `build:catalog` parses both Kotlin copies and
+  refuses to write if their rows disagree.
+- **The prediction is held to the Kotlin original by the app's own tests.** `build:parity`
+  writes `probe-parity.tsv` into `entity-arm/.../src/test/resources/`; `DeviceProbeParityTest`
+  asserts every estimate, fit verdict, reason string and recommendation matches to 1e-5.
+  Change either implementation without regenerating and the app's unit tests fail. The TSV
+  diff is also a readable statement of what a policy change did to the app's advice.
+
+`build:silicon` derives two constants per SoC from the contributed dataset: effective decode
+bandwidth (`decode tok/s x model bytes`) and an effective compute rate
+(`prompt tok/s x params`, with the quantization's prompt-path gain divided out). It carries
+the spread, the single-pass flag, and a `threadPolicyStale` mark for rows measured before
+v3.5.0 fixed the thread-derivation rule - those ran two threads on four to six performance
+cores, so they understate their silicon and the page says so.
+
 ## Leaderboard data
 
 `src/data/leaderboard.json` is a committed snapshot of `public.bench_results` (Supabase,
