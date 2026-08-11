@@ -84,6 +84,30 @@ pinned inference to 4 fast cores, effective cpus [4,5,6,7]&lt;- Auto</code></pre
         </p>
       </div>
     </div>
+
+    <div class="card p-5 mt-4 text-[0.8125rem] leading-relaxed space-y-2">
+      <p>
+        <span class="font-bold">What the naive arm is - and why it is not a strawman.</span>
+        It runs 8 threads across all 8 cores because that is the number upstream llama.cpp picks
+        for itself on this phone. <code>common_cpu_get_num_math()</code> counts only the
+        performance cores on hybrid CPUs, but that path is compiled out on Android - the guard
+        reads <code>!defined(__ANDROID__)</code> - so the function falls through to
+        <code>common_cpu_get_num_physical_cores()</code> and returns 8 on a 4+4 chip.
+      </p>
+      <p>
+        Every multiplier on this site is therefore measured against what an integrator gets by
+        building llama.cpp and not passing <code>-t</code>. That is a default, not a
+        configuration chosen to lose - and it loses on this hardware for a nameable reason: four
+        of those eight threads land on Cortex-A55s at roughly a third of an A78's throughput, and
+        every decode step waits on the slowest of them.
+      </p>
+      <p class="text-dim">
+        The honest cost of that choice is that the naive arm is also the noisiest, because a
+        straggler thread's timing varies with whatever else the scheduler is doing. It is why the
+        July summary is "roughly 2x from the thread count" rather than one fixed percentage, and
+        why the naive column carries the widest error bars in every table below.
+      </p>
+    </div>
   </section>
 
   <MetricsStrip />
@@ -266,6 +290,91 @@ pinned inference to 4 fast cores, effective cpus [4,5,6,7]&lt;- Auto</code></pre
         >
           Tokens per watt across configurations.
         </Plot>
+      </div>
+    </div>
+  </section>
+
+  <section id="equivalence" data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 scroll-mt-20">
+    <h2 class="text-xl font-bold">The speedup does not change the answer</h2>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div class="text-[0.8125rem] leading-relaxed space-y-3">
+        <p>
+          Every speed number on this site comes from changing how work is <em>scheduled</em> -
+          how many threads decode uses, which cores they run on. Nothing touches the weights or
+          the sampler, so the obvious assumption is that only the wait gets shorter.
+        </p>
+        <p>
+          That assumption is not free. ggml splits a row's dot product across threads and sums
+          the partials, so <span class="font-bold">the thread count fixes the order of a
+          floating-point reduction</span> - and floating-point addition is not associative.
+          Different order, different last bits; different last bits in a logit, and a near-tie
+          token flips. This project already depends on the effect being real: the perplexity
+          sweep pins its thread count for exactly this reason. It had never been measured.
+        </p>
+        <div class="scroll-x card">
+          <table class="data-table min-w-[520px]">
+            <caption class="sr-only">Output equivalence across scheduling arms</caption>
+            <thead>
+              <tr><th scope="col">Arm</th><th scope="col" class="num">Threads</th><th scope="col">CPUs</th><th scope="col">96 greedy tokens</th><th scope="col">Per-chunk PPL</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Naive</td><td class="num">8</td><td>0-7</td><td>byte-identical</td><td>identical 12/12</td></tr>
+              <tr><td>Threads only</td><td class="num">4</td><td>0-7</td><td>byte-identical</td><td>identical 12/12</td></tr>
+              <tr class="font-bold"><td>ENTITY Auto</td><td class="num">4</td><td>4-7</td><td>reference</td><td>reference</td></tr>
+              <tr><td>Efficiency</td><td class="num">4</td><td>0-3</td><td>byte-identical</td><td>identical 12/12</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Dimensity 7300, Llama-3.2-1B Q4_0, greedy decoding at a fixed seed, perplexity over 12
+          chunks of wikitext-2. <span class="font-bold">Naive against Auto is the pair that
+          matters</span> - the only comparison where the reduction width actually changes, and
+          also the baseline the decode gain is measured from. Same 96 tokens byte for byte, same
+          twelve per-chunk values, final PPL 19.2128 on all four arms.
+        </p>
+      </div>
+      <div class="space-y-4">
+        <div class="text-[0.8125rem] leading-relaxed space-y-3">
+          <p class="font-bold">Three controls, because a broken test also prints "identical"</p>
+          <div class="scroll-x card">
+            <table class="data-table min-w-[420px]">
+              <caption class="sr-only">Controls for the equivalence measurement</caption>
+              <thead>
+                <tr><th scope="col">Control</th><th scope="col">Must</th><th scope="col">Observed</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Reference arm, run twice</td><td>match</td><td>identical</td></tr>
+                <tr><td>Reference arm, one word added to the prompt</td><td>differ</td><td>differs</td></tr>
+                <tr><td>Reference arm over 3 chunks, not 12</td><td>differ</td><td>differs</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The third control is what makes the perplexity column mean anything, and it was found
+            rather than designed. A 3-chunk run scores chunk 1 at <code>8.3443</code> where the
+            12-chunk run scores <code>8.3423</code> - same 512 tokens, same file, same 4 threads
+            on the same cluster. Perplexity packs chunks into one batch, so the chunk total sets
+            how many sequences are scored together and therefore the shape of the matmuls doing
+            it. Three sequences in a batch accumulate differently from four.
+          </p>
+          <p>
+            So the instrument <em>does</em> move when the arithmetic is reorganised, by about two
+            parts in ten thousand. <span class="font-bold">Doubling the thread count and moving
+            the work from the A78 cluster to the A55 cluster moved it by zero.</span>
+          </p>
+        </div>
+        <CaveatCard title="Boundary">
+          <ul class="list-disc pl-4 space-y-1.5">
+            <li>Not a claim of bit-exactness: the per-chunk series prints to four decimals, so "identical" means agreement at that resolution. The batch control shows a ~2e-4 relative perturbation is visible here, not that a smaller one would be.</li>
+            <li>Greedy decoding only. Above temperature 0 the sampler's RNG dominates and the question changes.</li>
+            <li>One device, one model, one quantization, 12 chunks. Only the naive arm has a genuinely different reduction width; the other two share Auto's four threads and differ in placement alone.</li>
+          </ul>
+        </CaveatCard>
+        <p class="text-[0.8125rem] text-dim">
+          Runner <code>quant-lab/equivalence.sh</code>, raw outputs
+          <code>quant-lab/results/equivalence/</code>, full write-up
+          <code>quant-lab/RESULTS.md</code>.
+        </p>
       </div>
     </div>
   </section>

@@ -17,10 +17,19 @@ const top3 = sortGroups(
 ).slice(0, 3);
 const socCount = new Set(groups.map((g) => g.primary.soc.raw)).size;
 
+/*
+  Absolute figures first, ratio second. A percentage is the claim that is easiest to
+  inflate and hardest to check: "+68%" says nothing about whether the starting point was
+  fair, and it is the number a reader has to take on trust. "10.8 to 18.1 tok/s" is a
+  measurement, and the ratio is then just arithmetic the reader can do themselves.
+
+  The baseline named in every condition line is llama.cpp's own default thread count on
+  this hardware, not a configuration chosen to lose - see the method note on /evidence.
+*/
 const stats = [
-  { n: "+68%", to: 68, dec: 0, pre: "+", suf: "%", what: "faster decode vs naive", cond: "10.8 to 18.1 tok/s, CMF Phone 1, 5 runs per arm" },
-  { n: "42%", to: 42, dec: 0, pre: "", suf: "%", what: "less battery, same 128 tokens", cond: "86 J naive vs 50 J optimized, unplugged" },
-  { n: "3.4x", to: 3.4, dec: 1, pre: "", suf: "x", what: "lower time to first token", cond: "13,440 ms to 3,918 ms, same phone and model" },
+  { n: "18.1", to: 18.1, dec: 1, pre: "", suf: "", what: "tok/s decode, up from 10.8", cond: "+68% over llama.cpp's own 8-thread default, CMF Phone 1, 5 runs per arm" },
+  { n: "50 J", to: 50, dec: 0, pre: "", suf: " J", what: "per 128 tokens, down from 86 J", cond: "42% less battery for the same work, unplugged, integrated from the power curve" },
+  { n: "3.9 s", to: 3.9, dec: 1, pre: "", suf: " s", what: "to first token, down from 13.4 s", cond: "3.4x lower TTFT, same phone and model" },
   { n: "0", to: 0, dec: 0, pre: "", suf: "", what: "network calls while it runs", cond: "the opt-in model download is the only network touch" },
 ];
 
@@ -73,7 +82,7 @@ const highlights: { slug: any; title: string; cap: string }[] = [
 
 <Layout
   title="ENTITY - adaptive on-device LLM runtime for Arm phones"
-  description="Fully offline Android chat that tunes llama.cpp to the Arm CPU in the phone. Up to 68% faster decode and 42% less battery, with a public device leaderboard that proves it."
+  description="Fully offline Android chat that tunes llama.cpp to the Arm CPU in the phone: 18.1 tok/s where llama.cpp's own default manages 10.8, for 42% less battery, with a public device leaderboard that proves it."
   path="/"
 >
   <section class="relative mx-auto max-w-[1200px] px-4 md:px-6 pt-16 md:pt-24 pb-10 overflow-hidden">
@@ -93,8 +102,9 @@ const highlights: { slug: any; title: string; cap: string }[] = [
       style="animation-delay:150ms"
     >
       ENTITY reads the silicon, derives the thread width, and pins the fast cluster -
-      <span class="text-fg">up to 68% faster decode and 42% less battery</span>, fully offline. And
-      it proves which decision earned it.
+      <span class="text-fg">18.1 tok/s where llama.cpp's own default manages 10.8</span>, on the
+      same phone and the same model, for 42% less battery. Fully offline, and it proves which
+      decision earned it.
     </p>
     <div class="hero-rise mt-8 flex flex-wrap gap-3" style="animation-delay:210ms">
       <a href={withBase("/apps/#download")} class="btn btn-solid">Download ENTITY</a>
@@ -118,12 +128,21 @@ const highlights: { slug: any; title: string; cap: string }[] = [
       {
         stats.map((s) => (
           <div class="bg-surface p-5 md:p-6 flex flex-col" data-reveal>
+            {/*
+              data-count-final is what the tween restores when it lands. The counter in
+              Layout.astro has always read it; nothing ever wrote it, so `finalText` was
+              undefined and assigning it to textContent blanked the element - every one of
+              these four numbers disappeared the moment the animation finished, for every
+              visitor with JavaScript. The authored string is the source of truth, so it is
+              the one that has to be handed to the animation.
+            */}
             <dd
               class="order-1 text-[2rem] md:text-[2.5rem] font-bold leading-none text-accent-ink tabular-nums"
               data-count-to={s.to}
               data-count-decimals={s.dec}
               data-count-prefix={s.pre}
               data-count-suffix={s.suf}
+              data-count-final={s.n}
             >
               {s.n}
             </dd>
@@ -219,6 +238,14 @@ const highlights: { slug: any; title: string; cap: string }[] = [
         <a href={withBase("/evidence/#competition")}>Both sessions, screenshots and caveats</a> -
         including the July run that disagrees with this one.
       </p>
+      <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+        And the question underneath every number above: does going faster change what the model
+        says? Thread count fixes the order of a floating-point reduction, so it could. Measured
+        across four scheduling arms, <span class="font-bold">8 threads and the shipped 4 produce
+        the same tokens byte for byte and the same twelve per-chunk perplexity values</span> -
+        with a control proving the comparison can still detect a difference when there is one.
+        <a href={withBase("/evidence/#equivalence")}>The equivalence measurement</a>.
+      </p>
     </div>
   </section>
 
@@ -277,7 +304,15 @@ const highlights: { slug: any; title: string; cap: string }[] = [
           ))
         }
       </ol>
-      <a href={withBase("/leaderboard/")} class="btn mt-auto pt-4 self-start">Open the leaderboard</a>
+      <p class="mt-4 text-[0.75rem] text-dim leading-relaxed">
+        {socCount} distinct Arm SoCs, and I own two of them. Everything from a Cortex-A53 Helio
+        G37 to a Tensor G5 arrived because somebody else ran the benchmark and switched sharing
+        on - which is the only way a claim about Arm phones in general could be tested at all.
+      </p>
+      <div class="mt-auto pt-4 flex flex-wrap gap-2">
+        <a href={withBase("/leaderboard/")} class="btn">Open the leaderboard</a>
+        <a href={withBase("/predict/")} class="btn">Predict your phone</a>
+      </div>
     </div>
   </section>
 
@@ -301,6 +336,7 @@ const highlights: { slug: any; title: string; cap: string }[] = [
       </p>
       <div class="mt-6 flex flex-wrap justify-center gap-3">
         <a href={withBase("/apps/#download")} class="btn btn-solid">Download the APKs</a>
+        <a href={withBase("/predict/")} class="btn">See what your phone would do first</a>
         <a href={withBase("/evidence/")} class="btn">Read the evidence</a>
       </div>
       <p class="mt-6 text-[0.75rem] text-dim max-w-[60ch]">
