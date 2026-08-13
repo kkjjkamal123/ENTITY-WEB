@@ -400,24 +400,26 @@ pinned inference to 4 fast cores, effective cpus [4,5,6,7]&lt;- Auto</code></pre
               <tr><th scope="col">Mechanism</th><th scope="col">On Apple silicon</th></tr>
             </thead>
             <tbody>
-              <tr><td>Core placement</td><td><code>sched_setaffinity</code> absent on Darwin - <span class="font-bold">gone</span></td></tr>
               <tr><td>Live per-core frequency</td><td>no <code>/sys</code>, no public API - <span class="font-bold">gone</span></td></tr>
               <tr><td>ADPF deadline hints</td><td>no equivalent - <span class="font-bold">gone</span></td></tr>
               <tr><td>Energy telemetry</td><td>no battery current API - <span class="font-bold">gone</span></td></tr>
-              <tr><td>Thermal detail</td><td>four coarse levels - <span class="font-bold">degraded</span></td></tr>
               <tr><td>Multi-variant v8.0-v9.2 dispatch</td><td>cannot load code outside the bundle - <span class="font-bold">gone</span></td></tr>
-              <tr><td>Thread count</td><td>P-core count reported directly - <span class="font-bold">better</span></td></tr>
-              <tr><td>Adaptive context</td><td>per-process memory headroom - <span class="font-bold">better</span></td></tr>
+              <tr><td>Core placement</td><td><code>sched_setaffinity</code> absent on Darwin; becomes a QoS request that cannot be read back - <span class="font-bold">degraded</span></td></tr>
+              <tr><td>Thermal detail</td><td>a temperature becomes four coarse levels - <span class="font-bold">degraded</span></td></tr>
+              <tr><td>Thread count</td><td>P-core count reported directly, no heuristic needed - <span class="font-bold">better</span></td></tr>
               <tr><td>KleidiAI advisor</td><td>pure logic - <span class="font-bold">ports</span></td></tr>
-              <tr><td>Model-fit catalog</td><td>ports, with hard jetsam limits - <span class="font-bold">ports</span></td></tr>
+              <tr><td>Adaptive context</td><td>a better input exists; the port does not yet use it - <span class="font-bold">ports</span></td></tr>
+              <tr><td>Model-fit catalog</td><td>ports, but iOS memory limits are hard and per-app - <span class="font-bold">ports</span></td></tr>
             </tbody>
           </table>
         </div>
         <p>
-          <span class="font-bold">Six of ten cannot be reproduced.</span> Two get
-          <em>better</em>, because Apple reports P-core count and per-process memory headroom
-          directly instead of making you infer them from <code>/sys</code>. The asymmetry is
-          specifically about steering and observing - not about capability.
+          <span class="font-bold">Four cease to exist outright; two survive only degraded.</span>
+          A QoS request is not nothing - it is just not verifiable, where Android reads the
+          applied CPU mask back. And one mechanism gets <em>better</em>: Apple reports the
+          P-core count exactly, where Android has to parse per-core max frequency and count
+          what lands within 10% of the fastest - a heuristic this project has already had to
+          correct once. The asymmetry is about steering and observing, not capability.
         </p>
       </div>
       <div class="space-y-4">
