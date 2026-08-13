@@ -246,6 +246,14 @@ const highlights: { slug: any; title: string; cap: string }[] = [
         with a control proving the comparison can still detect a difference when there is one.
         <a href={withBase("/evidence/#equivalence")}>The equivalence measurement</a>.
       </p>
+      <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
+        And the one that bounds the whole thesis: how much of this is Arm the architecture, and how
+        much is Arm the <em>platform</em>? Ported to Apple silicon - also arm64 -
+        <span class="font-bold">six of the ten optimizations cannot exist</span>, because iOS will
+        not expose core placement, per-core clocks, deadline hints, energy, or multi-variant backend
+        dispatch. Measured on two iPhones: the runtime picks one thread, and a second costs 16.8%
+        and 11.4%. <a href={withBase("/evidence/#portability")}>What survived, and what did not</a>.
+      </p>
     </div>
   </section>
 

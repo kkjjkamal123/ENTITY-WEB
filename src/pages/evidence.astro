@@ -379,6 +379,97 @@ pinned inference to 4 fast cores, effective cpus [4,5,6,7]&lt;- Auto</code></pre
     </div>
   </section>
 
+  <section id="portability" data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 scroll-mt-20">
+    <h2 class="text-xl font-bold">How much of this is Arm the architecture, and how much is Arm the platform?</h2>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div class="text-[0.8125rem] leading-relaxed space-y-3">
+        <p>
+          Every optimization here works by <em>reading and steering the hardware</em> - which cores
+          are fast, what they are clocked at, where a thread lands, what the battery is drawing.
+          So: is that about arm64, or about Android exposing arm64?
+        </p>
+        <p>
+          There is a control, and it is the best one available. <span class="font-bold">Apple
+          silicon is also arm64</span> - same architecture, same big.LITTLE shape, same class of
+          quantized model, very fast. It simply will not let an application see or steer any of it.
+        </p>
+        <div class="scroll-x card">
+          <table class="data-table min-w-[520px]">
+            <caption class="sr-only">ENTITY's ten optimization mechanisms on Apple silicon</caption>
+            <thead>
+              <tr><th scope="col">Mechanism</th><th scope="col">On Apple silicon</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Core placement</td><td><code>sched_setaffinity</code> absent on Darwin - <span class="font-bold">gone</span></td></tr>
+              <tr><td>Live per-core frequency</td><td>no <code>/sys</code>, no public API - <span class="font-bold">gone</span></td></tr>
+              <tr><td>ADPF deadline hints</td><td>no equivalent - <span class="font-bold">gone</span></td></tr>
+              <tr><td>Energy telemetry</td><td>no battery current API - <span class="font-bold">gone</span></td></tr>
+              <tr><td>Thermal detail</td><td>four coarse levels - <span class="font-bold">degraded</span></td></tr>
+              <tr><td>Multi-variant v8.0-v9.2 dispatch</td><td>cannot load code outside the bundle - <span class="font-bold">gone</span></td></tr>
+              <tr><td>Thread count</td><td>P-core count reported directly - <span class="font-bold">better</span></td></tr>
+              <tr><td>Adaptive context</td><td>per-process memory headroom - <span class="font-bold">better</span></td></tr>
+              <tr><td>KleidiAI advisor</td><td>pure logic - <span class="font-bold">ports</span></td></tr>
+              <tr><td>Model-fit catalog</td><td>ports, with hard jetsam limits - <span class="font-bold">ports</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          <span class="font-bold">Six of ten cannot be reproduced.</span> Two get
+          <em>better</em>, because Apple reports P-core count and per-process memory headroom
+          directly instead of making you infer them from <code>/sys</code>. The asymmetry is
+          specifically about steering and observing - not about capability.
+        </p>
+      </div>
+      <div class="space-y-4">
+        <div class="text-[0.8125rem] leading-relaxed space-y-3">
+          <p class="font-bold">Then measured it - real int8 ONNX inference, two iPhones</p>
+          <div class="scroll-x card">
+            <table class="data-table min-w-[460px]">
+              <caption class="sr-only">Thread sweep and KleidiAI on Apple silicon</caption>
+              <thead>
+                <tr><th scope="col">Device</th><th scope="col" class="num">1 thread</th><th scope="col" class="num">2 threads</th><th scope="col" class="num">KleidiAI</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>iPhone 16 (A18)</td><td class="num">168.8 ms</td><td class="num">197.1 ms (+16.8%)</td><td class="num">1.089&times;</td></tr>
+                <tr><td>iPhone 17 Pro Max (A19 Pro)</td><td class="num">179.3 ms</td><td class="num">199.7 ms (+11.4%)</td><td class="num">1.045&times;</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The runtime settles on <span class="font-bold">one</span> thread and reports
+            <code>affinity: unavailable</code>. On Android the thread count is the single largest
+            earner in this project. Here a second thread is a straight loss, on both devices -
+            because there is no way to say <em>which</em> core it may use. The optimization does
+            not fail because the hardware differs. It fails because the platform will not let you
+            name a core.
+          </p>
+          <p>
+            Both phones report <span class="font-bold">SME and SME2</span>, extensions none of the
+            nine Android SoCs here have. It changes nothing: one static binary, no variant to
+            select.
+          </p>
+          <p>
+            And the cheaper phone wins, then loses. The base iPhone 16 leads at peak - 76.7 against
+            74.0 tok/s - then gives up <span class="font-bold">11% over six sustained windows</span>
+            while the Pro Max holds flat at 1.002&times;. Peak and sustained are different products;
+            only one is on the spec sheet.
+          </p>
+        </div>
+        <CaveatCard title="Boundary">
+          <ul class="list-disc pl-4 space-y-1.5">
+            <li>Different runtime and model from the Android record - ONNX Runtime int8 translation, not llama.cpp GGUF. The two sets are never compared numerically, and no table here puts them side by side.</li>
+            <li>No energy numbers. iOS exposes no battery current or voltage, so tokens-per-watt stays an Android-only claim. A separate SwiftUI benchmark emits a power column that is a hardcoded constant per arm; it is published as raw data and quoted nowhere.</li>
+            <li>Two devices, one inference workload. A third ONNX data point would strengthen the thread-sweep result, which rests on two devices agreeing.</li>
+          </ul>
+        </CaveatCard>
+        <p class="text-[0.8125rem] text-dim">
+          Full analysis <code>docs/PORTABILITY-ARM-VS-APPLE-SILICON.md</code>, raw exports
+          <code>benchmarks/results/ios/</code>, iOS sources and builds <code>ios/</code>.
+        </p>
+      </div>
+    </div>
+  </section>
+
   <section id="competition" data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 scroll-mt-20">
     <h2 class="text-xl font-bold">Against the competition - both sessions, because they disagree</h2>
     <p class="mt-2 text-dim text-[0.875rem] max-w-[68ch]">
