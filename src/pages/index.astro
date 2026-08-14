@@ -258,15 +258,65 @@ const highlights: { slug: any; title: string; cap: string }[] = [
         with a control proving the comparison can still detect a difference when there is one.
         <a href={withBase("/evidence/#equivalence")}>The equivalence measurement</a>.
       </p>
-      <p class="mt-2 text-[0.8125rem] text-dim leading-relaxed">
-        And the one that bounds the whole thesis: how much of this is Arm the architecture, and how
-        much is Arm the <em>platform</em>? Ported to Apple silicon - also arm64 -
-        <span class="font-bold">six of the ten optimizations are removed or crippled</span> - four
-        gone outright (per-core clocks, deadline hints, energy, multi-variant backend dispatch) and
-        two surviving only degraded, including core placement, which becomes a request the OS need
-        not honour and will not confirm. Measured on two iPhones: the runtime picks one thread, and
-        a second costs 16.8% and 11.4%.
-        <a href={withBase("/evidence/#portability")}>What survived, and what did not</a>.
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8">
+    <p class="eyebrow" data-reveal>The control &middot; iOS</p>
+    <h2 class="mt-2 text-xl md:text-2xl font-bold max-w-[26ch]" data-reveal>
+      Is this Arm the architecture, or Arm the <span class="text-accent-ink">platform?</span>
+    </h2>
+    <p class="mt-3 max-w-[68ch] text-dim text-[0.875rem] leading-relaxed" data-reveal>
+      Every optimization here works by reading and steering the hardware - which cores are fast,
+      what they are clocked at, where a thread lands, what the battery draws. So a fair question is
+      whether any of it is about arm64 at all, or only about Android exposing arm64. There is a
+      control, and it is the best one available: <strong class="text-fg">Apple silicon is also
+      arm64</strong> - same architecture, same big.LITTLE shape - and it will not let an app see or
+      steer any of it. ENTITY Bench was ported to iOS to find out which mechanisms survive.
+    </p>
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4" data-stagger="90">
+      <div class="card p-5 md:p-6" data-reveal>
+        <p class="text-[2.5rem] font-bold leading-none t-danger tabular-nums">4</p>
+        <p class="mt-2 text-[0.8125rem] font-bold">cease to exist</p>
+        <p class="mt-2 text-[0.75rem] text-dim leading-relaxed">
+          Live per-core frequency, ADPF deadline hints, energy telemetry, and the multi-variant
+          v8.0-v9.2 backend dispatch. No <code>/sys</code>, no public API, no loading code from
+          outside the bundle.
+        </p>
+      </div>
+      <div class="card p-5 md:p-6" data-reveal>
+        <p class="text-[2.5rem] font-bold leading-none t-warn tabular-nums">2</p>
+        <p class="mt-2 text-[0.8125rem] font-bold">survive degraded</p>
+        <p class="mt-2 text-[0.75rem] text-dim leading-relaxed">
+          Core placement becomes a QoS request the OS need not honour and will not confirm -
+          Android reads the applied CPU mask back. Thermal detail collapses from a temperature to
+          four coarse levels.
+        </p>
+      </div>
+      <div class="card p-5 md:p-6" data-reveal>
+        <p class="text-[2.5rem] font-bold leading-none t-ok tabular-nums">4</p>
+        <p class="mt-2 text-[0.8125rem] font-bold">port intact, one improves</p>
+        <p class="mt-2 text-[0.75rem] text-dim leading-relaxed">
+          The KleidiAI advisor and the model-fit catalog are pure logic. And Apple reports its
+          P-core count exactly, where Android has to infer it from per-core max frequency - the one
+          mechanism the other platform does better.
+        </p>
+      </div>
+    </div>
+    <div class="mt-4 card p-5 md:p-6" data-reveal>
+      <p class="text-[0.875rem] leading-relaxed">
+        <strong>Six of ten removed or crippled - and that is the answer.</strong> The gains on this
+        site are not arm64 being fast. They are Android exposing arm64 well enough to be steered,
+        on an architecture worth steering. Measured on two iPhones, where the runtime picks a single
+        thread and forcing a second costs <strong>16.8% and 11.4%</strong>.
+      </p>
+      <p class="mt-3 text-[0.75rem] text-dim leading-relaxed">
+        Scope, stated because it changes what the number means: the iOS build runs a
+        <strong class="text-fg">synthetic CPU-bound proxy, not a language model</strong> - no
+        llama.cpp, no weights - and iOS exposes no battery current, so its power column is a
+        heuristic and never quoted as an energy result. What it is a control for is the
+        <em>platform surface</em>, which needs no model to measure.
+        <a href={withBase("/evidence/#portability")}>The full mechanism table</a>.
       </p>
     </div>
   </section>
