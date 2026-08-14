@@ -7,7 +7,7 @@ import { withBase } from "../lib/url";
 
 const REPO = "https://github.com/kkjjkamal123/ENTITY---Arm-Create-AI-Optimization-Challenge";
 const DL = `${REPO}/releases/latest/download`;
-const BENCH_APK_DL = `https://github.com/kkjjkamal123/ENTITY---Arm-Create-AI-Optimization-Challenge/releases/download/EB_V2.2.0/ENTITY-Bench-v2.2.0-release.apk`;
+const BENCH_APK_DL = `https://github.com/kkjjkamal123/ENTITY---Arm-Create-AI-Optimization-Challenge/releases/download/EB_V2.2.1/ENTITY-Bench-v2.2.1-release.apk`;
 
 const chatShots: { slug: any; title: string; cap: string }[] = [
   { slug: "chat-home", title: "Live metrics while it generates", cap: "100 tok - 16.4 t/s - TTFT 299 ms - 33.0C - 4.34 W - CPU 47% - 1.2 GB, plus the selectable colour graph, the one colour surface in the app." },
@@ -32,7 +32,7 @@ const benchShots: { slug: any; title: string; cap: string }[] = [
 
 <Layout
   title="Apps - ENTITY chat and ENTITY Bench"
-  description="Two apps: the fully offline ENTITY assistant (v3.7.0) and the standalone ENTITY Bench ablation tool (v2.2.0). Direct APK downloads with SHA-256, arm64-v8a, Android 13+."
+  description="Two apps: the fully offline ENTITY assistant (v3.7.1) and the standalone ENTITY Bench ablation tool (v2.2.1). Direct APK downloads with SHA-256, arm64-v8a, Android 13+."
   path="/apps/"
 >
   <section class="mx-auto max-w-[1200px] px-4 md:px-6 pt-12 pb-8">
@@ -53,23 +53,24 @@ const benchShots: { slug: any; title: string; cap: string }[] = [
           <img src={withBase("/img/icon-light.png")} alt="ENTITY icon" width="36" height="36" class="only-light" />
         </span>
         <div>
-          <h2 class="text-lg font-bold leading-tight">ENTITY <span class="text-dim font-normal text-[0.8125rem]">v3.7.0</span></h2>
+          <h2 class="text-lg font-bold leading-tight">ENTITY <span class="text-dim font-normal text-[0.8125rem]">v3.7.1</span></h2>
           <p class="text-[0.6875rem] text-dim">on-device LLM chat</p>
         </div>
       </div>
-      <a class="btn btn-solid mt-4 w-full" href={`${DL}/ENTITY-v25-device-probe-20260808-release.apk`}>Download APK &middot; 10.0 MB</a>
+      <a class="btn btn-solid mt-4 w-full" href={`${DL}/ENTITY-v26-review-fixes-20260814-release.apk`}>Download APK &middot; 10.0 MB</a>
       <dl class="mt-3 text-[0.6875rem] text-dim space-y-1">
-        <div class="flex gap-2"><dt class="shrink-0">file</dt><dd class="truncate min-w-0">ENTITY-v25-device-probe-20260808-release.apk</dd></div>
-        <div class="flex gap-2"><dt class="shrink-0">sha-256</dt><dd class="break-all min-w-0">5738b6d2af34f0b25e838aca679d306e98b51eadcb1875d707b8fcf8861004bf</dd></div>
+        <div class="flex gap-2"><dt class="shrink-0">file</dt><dd class="truncate min-w-0">ENTITY-v26-review-fixes-20260814-release.apk</dd></div>
+        <div class="flex gap-2"><dt class="shrink-0">sha-256</dt><dd class="break-all min-w-0">e97ec05fa29f1184db0f5c5fb3430e8db091fa4a80b6d7a62c2f3dc41d1243d8</dd></div>
         <div class="flex gap-2"><dt class="shrink-0">requires</dt><dd>arm64-v8a, Android 13+</dd></div>
       </dl>
       <p class="mt-3 text-[0.6875rem] text-dim leading-relaxed">
-        <span class="font-bold">Upgrading from v3.6.2 or earlier?</span> v3.7.0 is signed with a new
+        <span class="font-bold">Upgrading from v3.6.2 or earlier?</span> every build from v3.7.0 on is signed with a new
         certificate, so an in-place update fails with
         <code>INSTALL_FAILED_UPDATE_INCOMPATIBLE</code> and you have to uninstall first - which
         deletes saved conversations. Export anything you want with SHARE CHAT before you do. A fresh
-        install is unaffected. A certificate mismatch normally means a tampered build, so this is
-        stated here rather than left to surprise you; the reason is
+        install is unaffected, and so is an update from v3.7.0 - that build carries the same
+        certificate as this one. A certificate mismatch normally means a tampered build, so this
+        is stated here rather than left to surprise you; the reason is
         <a href={withBase("/journey/")}>entry 11 on the journey page</a>.
       </p>
     </div>
@@ -80,27 +81,28 @@ const benchShots: { slug: any; title: string; cap: string }[] = [
           <img src={withBase("/img/bench-icon-light.png")} alt="ENTITY Bench icon" width="36" height="36" class="only-light" />
         </span>
         <div>
-          <h2 class="text-lg font-bold leading-tight">ENTITY Bench <span class="text-dim font-normal text-[0.8125rem]">v2.2.0</span></h2>
+          <h2 class="text-lg font-bold leading-tight">ENTITY Bench <span class="text-dim font-normal text-[0.8125rem]">v2.2.1</span></h2>
           <p class="text-[0.6875rem] text-dim">on-device LLM benchmark</p>
         </div>
       </div>
       <a class="btn btn-solid mt-4 w-full" href={BENCH_APK_DL}>Download APK &middot; 9.9 MB</a>
       <dl class="mt-3 text-[0.6875rem] text-dim space-y-1">
-        <div class="flex gap-2"><dt class="shrink-0">file</dt><dd class="truncate min-w-0">ENTITY-Bench-v2.2.0-release.apk</dd></div>
-        <div class="flex gap-2"><dt class="shrink-0">sha-256</dt><dd class="break-all min-w-0">6ca560c1cbe1b713d55e5d9e6837137f590d62d3190dced8bc496adbbe7c18f0</dd></div>
+        <div class="flex gap-2"><dt class="shrink-0">file</dt><dd class="truncate min-w-0">ENTITY-Bench-v2.2.1-release.apk</dd></div>
+        <div class="flex gap-2"><dt class="shrink-0">sha-256</dt><dd class="break-all min-w-0">5eaf3db5ae6908626ea3e9bef6d08f587ac181d1109edc796516bc8e1deb9a9d</dd></div>
         <div class="flex gap-2"><dt class="shrink-0">requires</dt><dd>arm64-v8a, Android 13+</dd></div>
       </dl>
       <p class="mt-3 text-[0.6875rem] text-dim leading-relaxed">
         <span class="font-bold">Same certificate change as the assistant.</span> Upgrading over
         v2.1.1 fails and needs an uninstall first, which deletes saved benchmark history - export
-        each result you want to keep to CSV beforehand. A fresh install is unaffected.
+        each result you want to keep to CSV beforehand. A fresh install is unaffected, and so is
+        an update from v2.2.0.
       </p>
     </div>
     <div class="md:col-span-2 card p-6">
       <p class="microlabel">Ninety seconds from clone to chatting</p>
       <pre class="scroll-x mt-3 rounded-[6px] border border-outline bg-bg p-4 text-[0.75rem] leading-relaxed"><code>git clone https://github.com/kkjjkamal123/ENTITY---Arm-Create-AI-Optimization-Challenge.git
 cd ENTITY---Arm-Create-AI-Optimization-Challenge
-adb install -r apk/ENTITY-v25-device-probe-20260808-release.apk</code></pre>
+adb install -r apk/ENTITY-v26-review-fixes-20260814-release.apk</code></pre>
       <p class="mt-3 text-[0.8125rem] text-dim max-w-[68ch]">
         Then on the phone: pick a model from the in-app catalog or import a GGUF you already
         have. <span class="text-fg">Prefer Q4_0 or Q8_0</span> - the only two types that reach

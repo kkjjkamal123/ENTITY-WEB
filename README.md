@@ -58,9 +58,9 @@ Two invariants keep the page from claiming things the app does not do:
 `build:silicon` derives two constants per SoC from the contributed dataset: effective decode
 bandwidth (`decode tok/s x model bytes`) and an effective compute rate
 (`prompt tok/s x params`, with the quantization's prompt-path gain divided out). It carries
-the spread, the single-pass flag, and a `threadPolicyStale` mark for rows measured before
-v3.5.0 fixed the thread-derivation rule - those ran two threads on four to six performance
-cores, so they understate their silicon and the page says so.
+the spread, the run count, and a `threadPolicyStale` mark for rows measured before v3.5.0
+fixed the thread-derivation rule - those ran two threads on four to six performance cores,
+so their constants are lower bounds and the page says which way the error runs.
 
 ## Leaderboard data
 

@@ -1,6 +1,11 @@
 {
   "chat": [
     {
+      "version": "3.7.1",
+      "date": "2026-08-14",
+      "title": "what a full-repo review found"
+    },
+    {
       "version": "3.7.0",
       "date": "2026-08-08",
       "title": "predicting a model before downloading it"
@@ -138,8 +143,13 @@
   ],
   "bench": [
     {
+      "version": "2.2.1",
+      "date": null,
+      "title": "the contribute screen actually contributes"
+    },
+    {
       "version": "2.2.0",
-      "date": "2026-08-08",
+      "date": null,
       "title": "the catalog, brought level with chat"
     },
     {

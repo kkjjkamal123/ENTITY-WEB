@@ -54,6 +54,10 @@ const PROFILES = [
   { id: "cramped-1gb", bandwidthGBs: 20.0, computeScore: 0.8, perfCores: 4, availableRamMb: 1024, flags: ["dotprod"] },
   // Nothing in the catalog clears MIN_USABLE_DECODE here; recommend must return null.
   { id: "unusably-slow", bandwidthGBs: 0.2, computeScore: 0.05, perfCores: 2, availableRamMb: 2048, flags: [] },
+  // ActivityManager reported nothing usable. Every row must come back TIGHT rather than
+  // OK, which is what used to happen and let the recommender pick the largest 7.6B entry
+  // for a device whose free memory was unknown.
+  { id: "unknown-free-memory", bandwidthGBs: 26.2, computeScore: 1.0, perfCores: 4, availableRamMb: 0, flags: ["dotprod"] },
 ];
 
 /* Six decimals is far more precision than any estimate deserves and far less than a

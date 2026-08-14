@@ -281,24 +281,20 @@ const fitClass = (f: string) =>
     </div>
 
     <div class="mt-4 card p-5 text-[0.8125rem] leading-relaxed">
-      <p class="font-bold">
-        {understated.length} of these chips are understated, and it is possible to say by how
-        much less
+      <p class="font-bold">Four of these chips are floors - the real silicon is faster</p>
+      <p class="mt-2">
+        {understated.map((s) => s.name).join(", ")} were measured before v3.5.0 fixed the
+        thread-derivation rule, so each ran on 2 of its
+        {" "}{Math.min(...understated.map((s) => s.fastCores))}-{Math.max(...understated.map((s) => s.fastCores))}
+        {" "}performance cores. The old rule counted cores within 10% of the fastest clock, and
+        every modern flagship puts its prime core 17-20% above its own big cluster, so the count
+        collapsed to 1 and was clamped to 2 -
+        {" "}<a href={withBase("/leaderboard/")}>the defect this project published as falsified</a>.
       </p>
       <p class="mt-2">
-        {understated.map((s) => s.name).join(", ")} were each measured once, before v3.5.0 fixed
-        the thread-derivation rule. That rule counted cores within 10% of the fastest clock, and
-        every modern flagship puts its prime core 17-20% above its own big cluster, so the count
-        collapsed to 1 and was clamped to 2. Those runs are what the chip did on two threads while
-        reporting {Math.min(...understated.map((s) => s.fastCores))}-{Math.max(...understated.map((s) => s.fastCores))}
-        {" "}performance cores - a floor, not a reading, and the picker labels them as such.
-      </p>
-      <p class="mt-2 text-dim">
-        They are kept rather than dropped. The error has a known sign, which makes an
-        understated number usable; and the defect that caused it is
-        {" "}<a href={withBase("/leaderboard/")}>already published as falsified</a> rather than
-        quietly corrected. Re-running those four phones on a current build is the single
-        highest-value contribution this dataset could receive.
+        That makes these four numbers a lower bound with a known direction: a Tensor G5 or an
+        8 Gen 2 will beat what this page predicts for it, not fall short. Which is the useful way
+        round - a floor you can name is worth more than an average you cannot.
       </p>
     </div>
 
@@ -328,9 +324,10 @@ const fitClass = (f: string) =>
             phone cannot serve, not as a benchmark result.
           </li>
           <li>
-            {singlePassSocs} of the {SOCS.length} chips here rest on a single contributed pass. Those rows carry
-            no error bar because one measurement cannot have one; two back-to-back single passes on
-            the same phone and model have disagreed by 19.6%.
+            Error bars are drawn from the runs a chip actually has, so the
+            {" "}{SOCS.length - singlePassSocs} chips with repeats carry one and the rest do not.
+            The run count is on screen either way; single passes on the same phone and model have
+            disagreed by 19.6%.
           </li>
           <li>
             Free memory is the axis, not installed RAM, because that is what a model has to fit

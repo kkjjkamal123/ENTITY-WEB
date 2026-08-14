@@ -53,10 +53,9 @@ if (root) {
 
   /*
     The error bar is the chip's own observed spread, not a confidence interval: half the
-    range between the fastest and slowest run recorded for that SoC. A chip with one
-    contributed pass has no spread to report and gets a provisional mark instead, because
-    one measurement cannot have an error bar and pretending otherwise would be the single
-    most misleading thing this page could do.
+    range between the fastest and slowest run recorded for that SoC. A chip with a single
+    contributed pass has no spread to draw one from, so it gets none - the run count is
+    shown either way, which is the same rule the leaderboard uses.
   */
   const band = (soc: SocRow, value: number): string => {
     if (soc.spreadPct === null) return "";
@@ -75,23 +74,21 @@ if (root) {
     ramOut.textContent = `${(ram / 1024 / 1024 / 1024).toFixed(1)} GB free`;
 
     const runs = `${soc.observations} contributed ${soc.observations === 1 ? "run" : "runs"}`;
-    const spread = soc.spreadPct === null
-      ? "single pass, so no spread - treat this chip's row as provisional"
-      : `runs spread ${soc.spreadPct.toFixed(0)}% end to end`;
+    const spread = soc.spreadPct === null ? "" : `, spread ${soc.spreadPct.toFixed(0)}% end to end`;
     /*
       A chip measured only under the pre-v3.5.0 thread policy ran on two threads while
-      reporting more performance cores, so its constants are a floor rather than a
-      reading. Saying which way the error runs is more useful than hiding the chip.
+      reporting more performance cores, so its numbers are a lower bound. The direction is
+      the useful part - this chip will beat what the page predicts, not fall short of it.
     */
     const stale = soc.threadPolicyStale
-      ? ` &middot; <span class="t-warn">measured on ${soc.threadsUsed.join("/")} of ${soc.fastCores} performance cores</span>, ` +
-        `before v3.5.0 fixed the thread rule - this chip is understated here`
+      ? ` &middot; measured on ${soc.threadsUsed.join("/")} of ${soc.fastCores} performance cores ` +
+        `(pre-v3.5.0 thread rule), so this chip's real numbers are higher`
       : "";
 
     socNote.innerHTML =
       `${esc(soc.devices.join(", "))} &middot; ${soc.decodeGBs.toFixed(1)} GB/s effective decode bandwidth ` +
       `&middot; ${esc(soc.flags.join(", ") || "no Arm ISA extensions reported")} ` +
-      `&middot; ${runs}, ${spread}${stale}`;
+      `&middot; ${runs}${spread}${stale}`;
 
     if (rec) {
       const est = rec.estimate;
@@ -132,7 +129,7 @@ if (root) {
           <td class="num">${fmtBytes(e.sizeBytes)}</td>
           <td class="num">${r.assessment.fit === "TOO_BIG" ? "-" : r.estimate.decodeToksPerS.toFixed(1) + band(soc, r.estimate.decodeToksPerS)}</td>
           <td class="num">${r.assessment.fit === "TOO_BIG" ? "-" : r.estimate.ttftSeconds.toFixed(1) + "s"}</td>
-          <td>${fit(r.assessment.fit)}${slow ? ` <span class="t-warn">too slow</span>` : ""}<span class="block text-[0.6875rem] text-dim">${esc(r.assessment.reason)}</span></td>
+          <td>${fit(r.assessment.fit)}${slow ? ` <span class="t-warn">&middot; below ${MIN_USABLE_DECODE} tok/s</span>` : ""}<span class="block text-[0.6875rem] text-dim">${esc(r.assessment.reason)}</span></td>
         </tr>`;
       })
       .join("");
@@ -149,7 +146,7 @@ if (root) {
 
   socSel.innerHTML = SOCS.map(
     (s) =>
-      `<option value="${esc(s.soc)}">${esc(s.name === s.soc ? s.soc : `${s.name} (${s.soc})`)} - ${esc(s.devices[0])}${s.threadPolicyStale ? " (understated)" : ""}</option>`
+      `<option value="${esc(s.soc)}">${esc(s.name === s.soc ? s.soc : `${s.name} (${s.soc})`)} - ${esc(s.devices[0])}</option>`
   ).join("");
 
   const setWorkload = (w: Workload) => {

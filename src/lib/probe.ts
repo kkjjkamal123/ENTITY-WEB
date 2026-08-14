@@ -115,16 +115,26 @@ export interface Assessment {
 
 // ------------------------------------------------------------------ prediction (pure)
 
+/**
+ * Free memory assumed when the system reports none, in GiB. See the Kotlin original for
+ * why the low end is the right end to pick.
+ */
+const ASSUMED_FREE_GB_WHEN_UNKNOWN = 1.5;
+
 /** Port of ModelCatalog.assess. */
 export function assess(e: Entry, availableRamBytes: number, flags: Set<string>): Assessment {
-  const ramGb = availableRamBytes / GIB;
+  // A memory query that failed is not a large phone; sizing against a conservative
+  // assumption keeps every rule below applicable instead of skipping them all.
+  const unknownRam = availableRamBytes <= 0;
+  const ramGb = unknownRam ? ASSUMED_FREE_GB_WHEN_UNKNOWN : availableRamBytes / GIB;
   const sizeGb = e.sizeBytes / GIB;
-  if (ramGb <= 0) return { fit: "OK", reason: "available memory unknown" };
 
   if (sizeGb > ramGb) {
     return {
       fit: "TOO_BIG",
-      reason: `${sizeGb.toFixed(1)} GB of weights with only ${ramGb.toFixed(1)} GB free right now`,
+      reason: unknownRam
+        ? `available memory could not be read - ${fmtBytes(e.sizeBytes)} is too much to risk on an unknown device`
+        : `${sizeGb.toFixed(1)} GB of weights with only ${ramGb.toFixed(1)} GB free right now`,
     };
   }
 
@@ -138,6 +148,13 @@ export function assess(e: Entry, availableRamBytes: number, flags: Set<string>):
     notes.push(`${e.quant} ${isa}`);
   } else {
     notes.push(`${e.quant} misses KleidiAI - runs ggml's Arm repack kernels instead`);
+  }
+
+  if (unknownRam) {
+    notes.push(
+      `available memory could not be read - sized against an assumed ${ASSUMED_FREE_GB_WHEN_UNKNOWN.toFixed(1)} GB free`
+    );
+    return { fit: "TIGHT", reason: notes.join(" · ") };
   }
 
   if (sizeGb > ramGb * 0.7) {
