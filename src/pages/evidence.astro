@@ -379,6 +379,80 @@ pinned inference to 4 fast cores, effective cpus [4,5,6,7]&lt;- Auto</code></pre
     </div>
   </section>
 
+  <section id="backends" data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 scroll-mt-20">
+    <p class="microlabel">Why the CPU</p>
+    <h2 class="mt-2 text-xl font-bold">The GPU is right there, and it loses by 30&times;</h2>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div class="text-[0.8125rem] leading-relaxed space-y-3">
+        <p>
+          Everything on this site optimizes the CPU. That was a design decision, and until it is
+          measured it stays a design decision - "we chose the CPU" and "the CPU is the right choice
+          here" are different claims and only the second is evidence. The phone has a Mali GPU
+          advertising Vulkan compute, so the alternative is real rather than hypothetical.
+        </p>
+        <div class="scroll-x card">
+          <table class="data-table min-w-[460px]">
+            <caption class="sr-only">CPU against Vulkan on the same binary and model</caption>
+            <thead>
+              <tr><th scope="col">Backend</th><th scope="col" class="num">Prompt tok/s</th><th scope="col" class="num">Decode tok/s</th></tr>
+            </thead>
+            <tbody>
+              <tr class="font-bold"><td>CPU, 4 threads pinned</td><td class="num">142.42 ± 0.80</td><td class="num">14.91 ± 1.19</td></tr>
+              <tr><td>Vulkan, all layers on GPU</td><td class="num t-danger">4.70 ± 0.03</td><td class="num t-danger">7.97 ± 0.09</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          <strong>30.3&times; slower on prompt, 1.9&times; slower on decode.</strong> Same binary,
+          same <code>Llama-3.2-1B-Instruct-Q4_0</code>, same PP 512 / TG 128, three repetitions,
+          cooldown before each arm. Not a close call that thermal noise could flip.
+        </p>
+        <p>
+          And the GPU says why itself, in the line it prints at startup:
+        </p>
+        <pre class="scroll-x rounded-[6px] border border-outline bg-bg p-3 text-[0.6875rem] leading-relaxed"><code>Mali-G615 MC2 | uma: 1 | fp16: 1 | bf16: 0
+            | <span class="t-danger">int dot: 0</span> | <span class="t-danger">matrix cores: none</span></code></pre>
+        <p>
+          <strong>No integer dot product and no matrix cores.</strong> Q4_0 inference is integer
+          matmul, and that is exactly the instruction class
+          <a href={withBase("/evidence/#isa")}>the ISA ladder</a> shows is worth 4.79&times; on this
+          CPU. The same workload has a hardware path on the CPU and none on the GPU, so it falls back
+          to generic shader arithmetic. The asymmetry is the mechanism: prompt is compute-bound and
+          collapses 30&times;, decode is bandwidth-bound and both processors wait on the same memory.
+        </p>
+      </div>
+      <div class="space-y-4">
+        <div class="card p-5 text-[0.8125rem] leading-relaxed space-y-3">
+          <p class="font-bold">There is no NPU arm, and that is structural</p>
+          <p>
+            llama.cpp has no NNAPI backend. <code>ggml/src</code> ships CPU, Vulkan, OpenCL, CUDA,
+            Metal and others, and nothing for Android's neural network API - so for this stack the
+            NPU question has an answer before any measurement: the path does not exist to be tested.
+            Saying that is more useful than quietly leaving the arm out.
+          </p>
+        </div>
+        <CaveatCard title="The control that nearly did not control">
+          <p>
+            The first run of this measured the CPU arm at <strong>4.69 tok/s prompt</strong> - 32&times;
+            below what the same silicon does in the shipped build - and would have made the GPU look
+            competitive. The cause was the control itself: with a Vulkan device registered,
+            <code>-ngl 0</code> still routes work to it. Removing the device from the registry with
+            <code>-dev none</code> returns the CPU arm to 142-158 tok/s. The wrong number was caught
+            because it disagreed with a measurement already on this page, which is the entire reason
+            for keeping the earlier one.
+          </p>
+        </CaveatCard>
+        <CaveatCard title="Boundary">
+          <ul class="list-disc pl-4 space-y-1.5">
+            <li>One GPU, one model, one quantization. A Mali-G615 without int-dot is not every mobile GPU; a part with integer matmul units could land elsewhere.</li>
+            <li>This is llama.cpp's Vulkan backend, not a hand-tuned mobile GPU kernel. It bounds what this runtime would get by offloading, not what the silicon could do in principle.</li>
+            <li>Runner <code>quant-lab/backend-probe.sh</code>, raw output <code>quant-lab/results/backend-probe/</code>.</li>
+          </ul>
+        </CaveatCard>
+      </div>
+    </div>
+  </section>
+
   <section id="kvrestore" data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 scroll-mt-20">
     <p class="microlabel">Multi-turn</p>
     <h2 class="mt-2 text-xl font-bold">The one optimization here that changes the shape, not the constant</h2>
