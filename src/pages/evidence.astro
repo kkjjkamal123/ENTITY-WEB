@@ -379,6 +379,70 @@ pinned inference to 4 fast cores, effective cpus [4,5,6,7]&lt;- Auto</code></pre
     </div>
   </section>
 
+  <section id="kvrestore" data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 scroll-mt-20">
+    <p class="microlabel">Multi-turn</p>
+    <h2 class="mt-2 text-xl font-bold">The one optimization here that changes the shape, not the constant</h2>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div class="text-[0.8125rem] leading-relaxed space-y-3">
+        <p>
+          Every other number on this site is a constant factor - the same work, done faster. This one
+          is different. Answering turn <em>k</em> of a conversation normally means re-decoding
+          everything said so far, so time-to-first-token grows with the history:
+          <strong>O(history)</strong>. ENTITY saves the conversation's KV cache to a file and restores
+          it instead, which is <strong>O(1)</strong> in compute and a file read in its place.
+        </p>
+        <p>
+          A single measurement cannot show a shape, so this sweeps history length. The instrument is
+          llama.cpp's own <code>--prompt-cache</code>, which uses the same
+          <code>llama_state_*</code> family the app wraps, so the result does not depend on ENTITY's
+          UI. Each prompt is a strict prefix extension of the last, the way a conversation grows.
+        </p>
+        <div class="scroll-x card">
+          <table class="data-table min-w-[520px]">
+            <caption class="sr-only">Prefill cost against history length, re-prime versus restore</caption>
+            <thead>
+              <tr><th scope="col" class="num">History</th><th scope="col" class="num">Re-prime</th><th scope="col" class="num">Restore</th><th scope="col" class="num">State file</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="num">171 tok</td><td class="num">1,696.6 ms</td><td class="num t-ok">0.00 ms</td><td class="num">5.6 MB</td></tr>
+              <tr><td class="num">348 tok</td><td class="num">3,368.3 ms</td><td class="num t-ok">0.00 ms</td><td class="num">11.4 MB</td></tr>
+              <tr><td class="num">704 tok</td><td class="num">5,608.7 ms</td><td class="num t-ok">0.00 ms</td><td class="num">23.1 MB</td></tr>
+              <tr><td class="num">1,406 tok</td><td class="num">12,915.9 ms</td><td class="num t-ok">0.00 ms</td><td class="num">46.1 MB</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          <strong>8.2&times; the history costs 7.6&times; the prefill - and 0.00 ms either way to
+          restore it.</strong> One column has slope, the other is flat, which is the whole claim. The
+          re-prime cost holds at roughly 9.2 ms per token across the range.
+        </p>
+      </div>
+      <div class="space-y-4">
+        <div class="card p-5 text-[0.8125rem] leading-relaxed space-y-3">
+          <p class="font-bold">What it costs, because it is not free</p>
+          <p>
+            The state file grows linearly too - <strong>32.8 KB per token</strong>, near-identical at
+            every length (32,978 / 32,879 / 32,831 / 32,808 bytes). Trading disk for time is the
+            actual bargain, and 46 MB for a 1,400-token conversation is the price.
+          </p>
+          <p>
+            End to end in <em>this</em> harness the restore path only wins past roughly 500 tokens of
+            history: below that, a fresh process pays a model load either way and that fixed cost
+            dominates the saved prefill. At 1,406 tokens it is <strong>3.07&times; faster end to
+            end</strong>; at 171 tokens it is slower.
+          </p>
+        </div>
+        <CaveatCard title="Boundary">
+          <ul class="list-disc pl-4 space-y-1.5">
+            <li>This harness starts a fresh process per arm, so both pay a model load. In the app the model is already resident and only the KV state is restored, so the saved prefill is the whole win and the crossover above does not apply - that number is not measured here.</li>
+            <li>Warm load times show no trend with state size across an 8&times; range (5.6 to 46.1 MB), so the file read is small next to the model load rather than measured directly.</li>
+            <li>One device, one model. Runner <code>quant-lab/kv-restore.sh</code>, raw output <code>quant-lab/results/kv-restore/</code>.</li>
+          </ul>
+        </CaveatCard>
+      </div>
+    </div>
+  </section>
+
   <section id="isa" data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 scroll-mt-20">
     <p class="microlabel">One device, seven backends</p>
     <h2 class="mt-2 text-xl font-bold">What the ISA dispatch is actually worth</h2>
