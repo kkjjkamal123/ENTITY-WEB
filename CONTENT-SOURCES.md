@@ -292,6 +292,15 @@ hand; regenerate with `npm run build:data` and commit the diff.
 | Lower-bound chips | Tensor G5, Snapdragon 8 Gen 2, Snapdragon 865, Snapdragon 8 Gen 1 - every run predates the v3.5.0 thread fix and used 2 threads on 4-6 performance cores, so the derived constants are floors with a known direction | `threadPolicyStale` in `soc-silicon.json`, detected as `optimized.threads < fast_cores`; the underlying defect is the falsified claim already published on `/leaderboard` |
 | Recommender change | a TIGHT fit is excluded from `recommend` rather than penalised - the old -1.5 was outbid by the capability term, which put a 2.18 GB download at 6.3 tok/s ahead of a 1.7B at 14.6 on the reference phone with 2.25 GB free | `DeviceProbe.recommend` KDoc; the before/after is visible in the `probe-parity.tsv` diff |
 
+## Upstream contribution (homepage)
+
+| Item | Value | Source |
+|---|---|---|
+| Merged upstream PR | `kleidiai : warn once when a weight type has no KleidiAI kernel`, ggml-org/llama.cpp #25701, merged 2026-07-21 into master as `fb0e6b6`, 1 file +15/-0 | [PR #25701](https://github.com/ggml-org/llama.cpp/pull/25701); also recorded in the app repo `README.md` and `docs/KLEIDIAI-QUANTS.md` |
+| KleidiAI kernel coverage | Q4_0 and Q8_0 only; every other type, K-quants included, falls back to generic ggml silently | `docs/KLEIDIAI-QUANTS.md` |
+| Cost of the silent fallback | Q3_K_L prefills **43.4 tok/s** against Q4_0's **128.2** on the same phone and model = **2.95x** prompt-path penalty | same CMF Phone 1 `llama-bench -p 512 -n 128 -r 3` session, 2026-08-06, quoted in `DeviceProbe.kt` KDoc alongside Q4_K_M's 111.7 |
+| Which releases were affected | every benchmark published before v2.1.0 used Q3_K_L, so Arm's kernels never executed | app repo `README.md`, journey entry on the withdrawn v2.0.0 headline |
+
 ## Baseline definition (site-wide)
 
 | Item | Value | Source |

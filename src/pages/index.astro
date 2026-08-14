@@ -82,7 +82,7 @@ const highlights: { slug: any; title: string; cap: string }[] = [
 
 <Layout
   title="ENTITY - adaptive on-device LLM runtime for Arm phones"
-  description="Fully offline Android chat that tunes llama.cpp to the Arm CPU in the phone: 18.1 tok/s where llama.cpp's own default manages 10.8, for 42% less battery, with a public device leaderboard that proves it."
+  description="Fully offline Android chat that tunes llama.cpp to the Arm CPU in the phone: 18.1 tok/s where llama.cpp's own default manages 10.8, for 42% less battery. The KleidiAI fix it found is merged upstream in llama.cpp, and a public device leaderboard proves the rest."
   path="/"
 >
   <section class="relative mx-auto max-w-[1200px] px-4 md:px-6 pt-16 md:pt-24 pb-10 overflow-hidden">
@@ -90,6 +90,18 @@ const highlights: { slug: any; title: string; cap: string }[] = [
     <p class="eyebrow hero-rise" style="animation-delay:40ms">
       Fully offline &middot; arm64-v8a &middot; Android 13+ &middot; Apache-2.0
     </p>
+    <a
+      href="https://github.com/ggml-org/llama.cpp/pull/25701"
+      rel="noopener"
+      class="hero-rise mt-4 inline-flex items-center gap-2 rounded-full border border-accent-line bg-accent-wash px-3 py-1.5 text-[0.75rem] no-underline"
+      style="animation-delay:60ms"
+    >
+      <span class="text-accent-ink font-bold">Merged into llama.cpp</span>
+      <span class="text-dim">
+        PR #25701, <code class="text-[0.6875rem]">fb0e6b6</code> &middot; the KleidiAI fallback is no
+        longer silent &rarr;
+      </span>
+    </a>
     <h1
       class="hero-rise mt-5 text-[2rem] md:text-[3.25rem] leading-[1.08] font-bold max-w-[18ch] tracking-tight"
       style="animation-delay:90ms"
@@ -275,6 +287,55 @@ const highlights: { slug: any; title: string; cap: string }[] = [
         ))
       }
     </ol>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8">
+    <p class="eyebrow" data-reveal>Upstream</p>
+    <h2 class="mt-2 text-xl md:text-2xl font-bold" data-reveal>
+      The fix for this did not stay in this project
+    </h2>
+    <div class="mt-5 card p-6 md:p-8" data-reveal>
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] gap-6 items-start">
+        <div class="text-[0.875rem] leading-relaxed space-y-3">
+          <p>
+            Arm's KleidiAI ships matmul kernels for <strong>Q4_0 and Q8_0 only</strong>. Every other
+            quantization - the whole K-quant family included - falls back to generic ggml no matter
+            which backend variant loaded, and <strong>the fallback is silent</strong>. That is how
+            every benchmark this project published before v2.1.0 came to use Q3_K_L, so Arm's kernels
+            never ran at all and nothing said so.
+          </p>
+          <p>
+            Finding that invalidated a release. Fixing it locally would have left the next person to
+            find it the same way, so the warning went upstream instead: llama.cpp now prints once,
+            per weight type, when a tensor reaches no KleidiAI kernel.
+          </p>
+          <p class="text-dim">
+            The measured cost of the mistake it prevents:
+            <strong class="text-fg">Q3_K_L prefills at 43.4 tok/s where Q4_0 does 128.2</strong> on
+            the same phone and the same model - a 2.95&times; prompt-path penalty for a quantization
+            choice with no warning attached.
+            <a href={withBase("/optimizations/#a4")}>The gate figure</a> and
+            <a href={withBase("/evidence/")}>the full record</a>.
+          </p>
+        </div>
+        <a
+          href="https://github.com/ggml-org/llama.cpp/pull/25701"
+          rel="noopener"
+          class="block no-underline rounded-[10px] border border-outline bg-bg p-5 hover:border-accent-line transition-colors"
+        >
+          <p class="microlabel">ggml-org/llama.cpp</p>
+          <p class="mt-2 text-[0.9375rem] font-bold leading-snug">
+            kleidiai : warn once when a weight type has no KleidiAI kernel
+          </p>
+          <dl class="mt-4 space-y-1.5 text-[0.75rem] text-dim">
+            <div class="flex gap-2"><dt class="w-16 shrink-0">pull</dt><dd class="text-accent-ink font-bold">#25701</dd></div>
+            <div class="flex gap-2"><dt class="w-16 shrink-0">merged</dt><dd>2026-07-21, into master</dd></div>
+            <div class="flex gap-2"><dt class="w-16 shrink-0">commit</dt><dd><code>fb0e6b6</code></dd></div>
+          </dl>
+          <p class="mt-4 text-[0.75rem] text-accent-ink font-bold">Read it on GitHub &rarr;</p>
+        </a>
+      </div>
+    </div>
   </section>
 
   <section class="mx-auto max-w-[1200px] px-4 md:px-6 py-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
