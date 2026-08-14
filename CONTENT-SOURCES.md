@@ -292,6 +292,23 @@ hand; regenerate with `npm run build:data` and commit the diff.
 | Lower-bound chips | Tensor G5, Snapdragon 8 Gen 2, Snapdragon 865, Snapdragon 8 Gen 1 - every run predates the v3.5.0 thread fix and used 2 threads on 4-6 performance cores, so the derived constants are floors with a known direction | `threadPolicyStale` in `soc-silicon.json`, detected as `optimized.threads < fast_cores`; the underlying defect is the falsified claim already published on `/leaderboard` |
 | Recommender change | a TIGHT fit is excluded from `recommend` rather than penalised - the old -1.5 was outbid by the capability term, which put a 2.18 GB download at 6.3 tok/s ahead of a 1.7B at 14.6 on the reference phone with 2.25 GB free | `DeviceProbe.recommend` KDoc; the before/after is visible in the `probe-parity.tsv` diff |
 
+## iOS control (homepage, evidence #portability)
+
+Every iOS number quoted on the site comes from **`benchmarks/results/ios/onnx/`** - real int8 ONNX
+inference, ONNX Runtime 1.27.0, 285,230,912 bytes of staged weights with SHA-256 per model file, 30
+iterations, counterbalanced, 5 warmup rounds, two sentence lengths, p95/p99 and stddev recorded,
+2026-08-13. The repo's `benchmarks/results/ios/synthetic-ablation/` set is a different app and is
+never quoted; that directory's own README states the distinction.
+
+| Item | Value | Source |
+|---|---|---|
+| Mechanism count | 4 gone outright, 2 degraded, 4 port (1 improves) | `docs/PORTABILITY-ARM-VS-APPLE-SILICON.md` |
+| Cost of a second thread | iPhone 16 (A18) 168.8 -> 197.1 ms = **+16.8%**; iPhone 17 Pro Max (A19 Pro) 179.3 -> 199.7 ms = **+11.4%**, long-sentence means | `onnx/` CSV + JSON |
+| Affinity | `"affinityAvailable": false` on both; runtime policy settles on `threads=1` | `onnx/` JSON |
+| KleidiAI on Apple silicon | **1.089x** iPhone 16 (173.2 on / 188.6 off), **1.045x** 17 Pro Max (179.6 / 187.7) | `onnx/` |
+| ISA reported | NEON, fp16, bf16, dotprod, i8mm, SME, SME2; `FEAT_SVE` not queryable | `onnx/` JSON |
+| No energy figures | iOS exposes no battery current, so tok/W is Android-only | platform limitation, stated in `ios/README.md` |
+
 ## ISA tiers in the contributed data (leaderboard)
 
 Derived from `src/data/leaderboard.json`, optimized arm, `Llama-3.2-1B-Instruct-Q4_0` rows only

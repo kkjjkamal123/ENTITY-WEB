@@ -310,12 +310,16 @@ const highlights: { slug: any; title: string; cap: string }[] = [
         on an architecture worth steering. Measured on two iPhones, where the runtime picks a single
         thread and forcing a second costs <strong>16.8% and 11.4%</strong>.
       </p>
+      <p class="mt-3 text-[0.8125rem] leading-relaxed">
+        And KleidiAI is the one mechanism that crosses the boundary intact -
+        <strong>1.089&times; on the A18, 1.045&times; on the A19 Pro</strong>. Both phones report
+        SME and SME2, extensions none of the Android fleet has, and it changes nothing: there is one
+        static binary and no variant to select.
+      </p>
       <p class="mt-3 text-[0.75rem] text-dim leading-relaxed">
-        Scope, stated because it changes what the number means: the iOS build runs a
-        <strong class="text-fg">synthetic CPU-bound proxy, not a language model</strong> - no
-        llama.cpp, no weights - and iOS exposes no battery current, so its power column is a
-        heuristic and never quoted as an energy result. What it is a control for is the
-        <em>platform surface</em>, which needs no model to measure.
+        Real int8 ONNX inference - ONNX Runtime 1.27.0, 285 MB of staged weights hashed per file, 30
+        iterations counterbalanced with 5 warmup rounds, p95 and p99 recorded. Tokens per watt stays
+        an Android-only claim: iOS exposes no battery current to an app at all.
         <a href={withBase("/evidence/#portability")}>The full mechanism table</a>.
       </p>
     </div>
