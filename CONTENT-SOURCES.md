@@ -292,6 +292,20 @@ hand; regenerate with `npm run build:data` and commit the diff.
 | Lower-bound chips | Tensor G5, Snapdragon 8 Gen 2, Snapdragon 865, Snapdragon 8 Gen 1 - every run predates the v3.5.0 thread fix and used 2 threads on 4-6 performance cores, so the derived constants are floors with a known direction | `threadPolicyStale` in `soc-silicon.json`, detected as `optimized.threads < fast_cores`; the underlying defect is the falsified claim already published on `/leaderboard` |
 | Recommender change | a TIGHT fit is excluded from `recommend` rather than penalised - the old -1.5 was outbid by the capability term, which put a 2.18 GB download at 6.3 tok/s ahead of a 1.7B at 14.6 on the reference phone with 2.25 GB free | `DeviceProbe.recommend` KDoc; the before/after is visible in the `probe-parity.tsv` diff |
 
+## ISA tiers in the contributed data (leaderboard)
+
+Derived from `src/data/leaderboard.json`, optimized arm, `Llama-3.2-1B-Instruct-Q4_0` rows only
+(one model so the comparison is within-file), byte-identical re-uploads collapsed: 19 runs.
+
+| Item | Value | Source |
+|---|---|---|
+| One-binary range | 4.58 tok/s (MT6765H / Helio G37) to 33.3 (MT6897 / Dimensity 8300) = **7.3x** decode | leaderboard snapshot, optimized arm |
+| Median by tier, prompt | no extensions **9.9**, dotprod **90**, dotprod+i8mm **106** | grouped on `cpu_flags`; n = 2 / 9 / 8 |
+| Median by tier, decode | no extensions **6.2**, dotprod **16.6**, dotprod+i8mm **21.3** | same |
+| dotprod boundary | **9.1x prompt, 2.7x decode**, ratio **3.4x** | medians above |
+| Why the asymmetry is the claim | a uniformly slower chip lowers both axes together; prompt moving 3.4x harder isolates the integer matmul kernel, which is what dotprod changes | same compute-bound / bandwidth-bound split as `/predict` |
+| Stated boundary | n = 2 in the no-extension tier, so the absolute 9.1x carries every other difference between those chips; the asymmetry is what survives it | stated on the page |
+
 ## Upstream contribution (homepage)
 
 | Item | Value | Source |
