@@ -379,6 +379,78 @@ pinned inference to 4 fast cores, effective cpus [4,5,6,7]&lt;- Auto</code></pre
     </div>
   </section>
 
+  <section id="isa" data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 scroll-mt-20">
+    <p class="microlabel">One device, seven backends</p>
+    <h2 class="mt-2 text-xl font-bold">What the ISA dispatch is actually worth</h2>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div class="text-[0.8125rem] leading-relaxed space-y-3">
+        <p>
+          ENTITY ships one APK carrying <strong>seven CPU backends</strong> and picks one at startup
+          by scoring each against the chip. The usual way to argue that is worth something is a
+          cross-device chart - an Armv8.0 phone beside an ARMv9 phone - but that comparison is
+          confounded by everything else that differs between two phones: bandwidth, cluster width,
+          thermal budget, scheduler.
+        </p>
+        <p>
+          So instead: <strong>every variant, forced in turn, on one device.</strong> Same model, same
+          four threads, same pinned cores, same cooldown before each arm. The only thing that changes
+          is which instruction set the kernels may use. llama.cpp scores backends in whatever
+          directory it scans, so each variant is isolated in its own folder holding exactly one
+          <code>libggml-cpu-*.so</code>, and the backend that actually loaded is read back out of
+          llama.cpp's own log rather than assumed.
+        </p>
+        <div class="scroll-x card">
+          <table class="data-table min-w-[520px]">
+            <caption class="sr-only">Throughput per forced CPU backend variant on one device</caption>
+            <thead>
+              <tr><th scope="col">Backend variant</th><th scope="col">adds</th><th scope="col" class="num">Prompt</th><th scope="col" class="num">Decode</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>armv8.0_1</code></td><td>NEON only</td><td class="num">31.63 ± 0.03</td><td class="num">18.29 ± 0.04</td></tr>
+              <tr class="font-bold"><td><code>armv8.2_1</code></td><td>+ dotprod</td><td class="num">151.62 ± 0.19</td><td class="num">18.50 ± 0.16</td></tr>
+              <tr><td><code>armv8.2_2</code></td><td>+ fp16 vector</td><td class="num">151.76 ± 0.01</td><td class="num">18.64 ± 0.09</td></tr>
+              <tr><td><code>armv8.6_1</code></td><td>+ i8mm</td><td class="num" colspan="2">not loaded - this CPU has no i8mm</td></tr>
+              <tr><td><code>armv9.0_1</code> … <code>armv9.2_2</code></td><td>+ SVE2, SME</td><td class="num" colspan="2">not loaded - Cortex-A78, no SVE2 or SME</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          CMF Phone 1, Dimensity 7300, <code>Llama-3.2-1B-Instruct-Q4_0</code>, PP 512 / TG 128,
+          4 threads pinned to the A78 cluster, 3 repetitions, 45 s cooldown before every arm.
+        </p>
+      </div>
+      <div class="space-y-4">
+        <div class="card p-5 text-[0.8125rem] leading-relaxed space-y-3">
+          <p class="font-bold">dotprod is worth 4.79&times; on prompt and nothing at all on decode</p>
+          <p>
+            <strong>+379.4% prompt, +1.1% decode.</strong> Adding one instruction family quintuples
+            one phase and leaves the other inside its own noise - and that is the whole argument,
+            because it is only available on one device with everything else held still. A
+            cross-device chart cannot separate "this chip has dotprod" from "this chip is newer".
+          </p>
+          <p>
+            The asymmetry is the mechanism made visible: prompt processing is a compute-bound GEMM
+            running the integer matmul kernels dotprod changes, and decode is bandwidth-bound and
+            waiting on memory either way. It is the same split
+            <a href={withBase("/predict/")}>the predictor</a> is built on, and the same one the
+            contributed dataset shows across 13 SoCs at 9.1&times; against 2.7&times;.
+          </p>
+          <p class="text-dim">
+            fp16 vector arithmetic on top adds <strong>+0.1%</strong> - nothing. Worth publishing
+            precisely because it is nothing: the ladder is not a smooth ramp, it is one step.
+          </p>
+        </div>
+        <CaveatCard title="Boundary">
+          <ul class="list-disc pl-4 space-y-1.5">
+            <li>One device, one model, one quantization. The step is where <em>this</em> CPU sits on the ladder; a chip with i8mm would have another rung above it that this phone cannot show.</li>
+            <li>The four unloaded rungs are a genuine result - ggml scored them against the CPU and refused - but they were verified by hand after an earlier run reported all seven as unsupported because a missing <code>libomp.so</code> stopped every binary at the linker. The harness now separates a link failure from an ISA rejection and says which it saw.</li>
+            <li>Runner <code>quant-lab/isa-dispatch.sh</code>, raw output <code>quant-lab/results/isa-dispatch/</code>.</li>
+          </ul>
+        </CaveatCard>
+      </div>
+    </div>
+  </section>
+
   <section id="portability" data-reveal class="mx-auto max-w-[1200px] px-4 md:px-6 py-10 scroll-mt-20">
     <p class="microlabel">The iOS control</p>
     <h2 class="mt-2 text-xl font-bold">How much of this is Arm the architecture, and how much is Arm the platform?</h2>
