@@ -1,5 +1,5 @@
 {
- "fetched_at": "2026-08-22T03:57:15.393Z",
+ "fetched_at": "2026-08-23T04:01:10.975Z",
  "source": "supabase:public.bench_results",
  "rows": [
   {
@@ -2867,6 +2867,129 @@
    "id": 30,
    "received_at": "2026-08-20T08:11:54.066762+00:00",
    "submission_id": "d4be3778-0601-4314-a2a3-9cf10d11a3d8",
+   "app_version": "2.2.1",
+   "app_version_code": 13,
+   "run_type": "ablation",
+   "run_ts": 1787213224447,
+   "device_manufacturer": "Nothing",
+   "device_model": "A015",
+   "soc": "mt6878 / MT6878",
+   "android_release": "16",
+   "android_sdk": 36,
+   "abis": [
+    "arm64-v8a"
+   ],
+   "cpu_flags": [
+    "dotprod",
+    "fp16"
+   ],
+   "max_freqs_mhz": [
+    2000,
+    2000,
+    2000,
+    2000,
+    2500,
+    2500,
+    2500,
+    2500
+   ],
+   "fast_cores": 4,
+   "little_cores": 4,
+   "model_file": "1b-q4_0-stock",
+   "quantization": "Q4_0",
+   "kleidiai_accelerated": true,
+   "runs_per_arm": 1,
+   "duration_min": 0,
+   "start_temp_c": 38,
+   "charging": true,
+   "power_valid": false,
+   "arms": [
+    {
+     "arm": "naive",
+     "watts": 3.9665135451612907,
+     "passes": 1,
+     "pinned": true,
+     "threads": 8,
+     "ttft_ms": 5610.528815169092,
+     "decode_sd": 0,
+     "prompt_sd": 0,
+     "tok_per_w": 2.3975715427976168,
+     "decode_tok_s": 9.51,
+     "prompt_tok_s": 93,
+     "slow_cluster": false
+    },
+    {
+     "arm": "threads_only",
+     "watts": 3.065111538461537,
+     "passes": 1,
+     "pinned": false,
+     "threads": 4,
+     "ttft_ms": 4065.359477124183,
+     "decode_sd": 0,
+     "prompt_sd": 0,
+     "tok_per_w": 4.9916617415102245,
+     "decode_tok_s": 15.3,
+     "prompt_tok_s": 128,
+     "slow_cluster": false
+    },
+    {
+     "arm": "optimized",
+     "watts": 2.368169418367348,
+     "passes": 1,
+     "pinned": true,
+     "threads": 4,
+     "ttft_ms": 6247.037787986893,
+     "decode_sd": 0,
+     "prompt_sd": 0,
+     "tok_per_w": 5.953965915884834,
+     "decode_tok_s": 14.1,
+     "prompt_tok_s": 82.9,
+     "slow_cluster": false
+    },
+    {
+     "arm": "efficiency",
+     "watts": 1.0227630508474574,
+     "passes": 1,
+     "pinned": true,
+     "threads": 4,
+     "ttft_ms": 7865.900777909434,
+     "decode_sd": 0,
+     "prompt_sd": 0,
+     "tok_per_w": 11.537374165230712,
+     "decode_tok_s": 11.8,
+     "prompt_tok_s": 65.8,
+     "slow_cluster": true
+    },
+    {
+     "arm": "adpf",
+     "watts": 0.7894410574468091,
+     "passes": 1,
+     "pinned": false,
+     "threads": 4,
+     "ttft_ms": 5373.736451102181,
+     "decode_sd": 0,
+     "prompt_sd": 0,
+     "tok_per_w": 17.227378626575092,
+     "decode_tok_s": 13.6,
+     "prompt_tok_s": 96.6,
+     "slow_cluster": false
+    }
+   ],
+   "cpu_capacities": [
+    228,
+    228,
+    228,
+    228,
+    1024,
+    1024,
+    1024,
+    1024
+   ]
+  },
+  {
+   "id": 31,
+   "received_at": "2026-08-22T13:55:09.704219+00:00",
+   "submission_id": "b16c3e4b-9295-45cc-a3cd-d591cf9068ab",
    "app_version": "2.2.1",
    "app_version_code": 13,
    "run_type": "ablation",
